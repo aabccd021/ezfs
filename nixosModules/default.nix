@@ -58,7 +58,7 @@ let
       ${cfg.host} ${config.ezfs.sshdPublicKey}
     '';
 
-  sshKey = cfg: config.sops.secrets.${cfg.privateKeySopsName}.path;
+  sshKey = backupName: "ezfs_pull_backup_ssh_key_${backupName}";
 
   source = dsName: cfg: "${cfg.user}@${cfg.host}:${dsName}";
 
@@ -83,9 +83,6 @@ let
         type = lib.types.str;
       };
       publicKey = lib.mkOption {
-        type = lib.types.str;
-      };
-      privateKeySopsName = lib.mkOption {
         type = lib.types.str;
       };
       privateKey = lib.mkOption {
@@ -235,20 +232,25 @@ in
         }
       );
       sops = mapTarget (
-        { cfg, ... }:
+        { backupName, cfg, ... }:
         {
-          secrets.${cfg.privateKeySopsName} = cfg.privateKey // {
+          secrets.${sshKey backupName} = cfg.privateKey // {
             owner = config.services.syncoid.user;
             group = config.services.syncoid.group;
           };
         }
       );
       services = mapTarget (
-        { dsName, cfg, ... }:
+        {
+          backupName,
+          dsName,
+          cfg,
+          ...
+        }:
         {
           syncoid.enable = true;
           syncoid.commands."pull-backup-${formalName dsName}" = {
-            sshKey = sshKey cfg;
+            sshKey = config.sops.secrets.${sshKey backupName}.path;
             source = source dsName cfg;
             target = cfg.targetDataset;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
@@ -268,7 +270,12 @@ in
         }
       );
       environment = mapTarget (
-        { dsName, cfg, ... }:
+        {
+          backupName,
+          dsName,
+          cfg,
+          ...
+        }:
         {
           systemPackages = [
             (pkgs.writeShellApplication {
@@ -279,7 +286,7 @@ in
                 # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
                 exec syncoid \
                 ${lib.optionalString (cfg.restoreExtraArgs != [ ]) (lib.escapeShellArg cfg.restoreExtraArgs)} \
-                --sshkey ${sshKey cfg} \
+                --sshkey ${config.sops.secrets.${sshKey backupName}.path} \
                 --sshoption='StrictHostKeyChecking=yes' \
                 --sshoption='UserKnownHostsFile=${knownHost cfg}' \
                 --no-sync-snap \

@@ -29,7 +29,6 @@ let
             host = "server.com";
             user = "mybackupuser";
             publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
-            privateKeySopsName = "ezfs_private_key";
             privateKey = {
               key = "backup_ssh_key";
               sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;

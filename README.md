@@ -2,7 +2,6 @@
 Easy ZFS configuration for NixOS
 
 # TODO
-- mock sops file (remove privateKeySopsName)
 - make config linear for better naming
 - create single `ezfs` command reading from json config file
 - pubkey auth true
