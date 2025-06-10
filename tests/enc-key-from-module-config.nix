@@ -1,3 +1,12 @@
+# This test makes sure that `options.keylocation` is lazy loaded
+# (only read when the dataset is enabled).
+#
+# We want to share ezfs config as many as possible between server and desktop,
+# so ideally any options that only used by a specific node doesn't make error on another node.
+#
+# Specifically in this test, `environment.etc."encryption_key.txt".text` only exists on the server,
+# and if we don't implement it correctly, the desktop will fail to build.
+
 {
   pkgs,
   inputs,
@@ -81,7 +90,6 @@ pkgs.testers.runNixOSTest {
 
     # simulate putting secrets
     boot.initrd.postDeviceCommands = ''
-      chmod 400 /run/encryption_key.txt
       cp -Lr ${mockSecrets.ed25519.bob.private} /run/sshd_host_key
       chmod 400 /run/sshd_host_key
     '';
