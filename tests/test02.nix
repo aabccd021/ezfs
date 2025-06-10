@@ -115,13 +115,14 @@ pkgs.testers.runNixOSTest {
     # Insert data to the dataset
     server.succeed("echo 'hello world' > /zpool/foo/hello.txt")
 
-    # Create a snapshot
+    # Create a snapshot of the dataset
     server.succeed("systemctl start --wait sanoid")
 
     # Create a zpool on the desktop
     desktop.succeed("zpool create backup_zpool /dev/vdb")
 
-    # Pull backup from the server
+    # Pull backup from the server.
+    # This service will run periodically, but here we run it manually for testing.
     desktop.succeed("systemctl start --wait syncoid-pull-backup-zpool-foo")
 
     # Simulate data loss
