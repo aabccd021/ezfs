@@ -227,6 +227,13 @@ in
       );
     }
     {
+      boot = mapTarget (
+        { cfg, ... }:
+        {
+          zfs.extraPools = [ (dsToPool cfg.targetDataset) ];
+          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+        }
+      );
       sops = mapTarget (
         { cfg, ... }:
         {
@@ -236,8 +243,6 @@ in
           };
         }
       );
-    }
-    {
       services = mapTarget (
         { dsName, cfg, ... }:
         {
@@ -262,76 +267,92 @@ in
           };
         }
       );
-    }
-    {
-      environment = (
-        mapTarget (
-          { dsName, cfg, ... }:
-          {
-            systemPackages = [
-              (pkgs.writeShellApplication {
-                name = "syncoid-pull-restore-${formalName dsName}";
-                runtimeInputs = [ config.services.syncoid.package ];
-                text = ''
-                  # TODO: check if source dataset exists before running this script
-                  # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
-                  exec syncoid \
-                    ${lib.optionalString (cfg.restoreExtraArgs != [ ]) (lib.escapeShellArg cfg.restoreExtraArgs)} \
-                    --sshkey ${sshKey cfg} \
-                    --sshoption='StrictHostKeyChecking=yes' \
-                    --sshoption='UserKnownHostsFile=${knownHost cfg}' \
-                    --no-sync-snap \
-                    --no-privilege-elevation \
-                    --sendoptions="w" \
-                    --recvoptions="u" \
-                    ${cfg.targetDataset} \
-                    ${source dsName cfg}
-                '';
-              })
-            ];
-          }
-        )
+      environment = mapTarget (
+        { dsName, cfg, ... }:
+        {
+          systemPackages = [
+            (pkgs.writeShellApplication {
+              name = "syncoid-pull-restore-${formalName dsName}";
+              runtimeInputs = [ config.services.syncoid.package ];
+              # TODO: check if source dataset exists before running this script
+              text = ''
+                # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
+                exec syncoid \
+                ${lib.optionalString (cfg.restoreExtraArgs != [ ]) (lib.escapeShellArg cfg.restoreExtraArgs)} \
+                --sshkey ${sshKey cfg} \
+                --sshoption='StrictHostKeyChecking=yes' \
+                --sshoption='UserKnownHostsFile=${knownHost cfg}' \
+                --no-sync-snap \
+                --no-privilege-elevation \
+                --sendoptions="w" \
+                --recvoptions="u" \
+                ${cfg.targetDataset} \
+                ${source dsName cfg}
+              '';
+            })
+          ];
+        }
       );
     }
     {
-      environment = (
-        mapDataset (
-          dsName: cfg:
-          let
-            users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
-          in
+
+      boot = mapDataset (
+        dsName: cfg: {
+          zfs.extraPools = [ (dsToPool dsName) ];
+          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+        }
+      );
+      assertions = mapDataset (
+        dsName: cfg: [
           {
-            systemPackages = [
-              pkgs.mbuffer
-              pkgs.lzop
-
-              (pkgs.writeShellApplication {
-                name = "ezfs-create-${formalName dsName}";
-                runtimeInputs = [ "/run/booted-system/sw" ];
-                text = ''
-                  zfs create -u ${
-                    lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") cfg.options)
-                  } ${dsName}
-                '';
-              })
-
-              (pkgs.writeShellApplication {
-                name = "ezfs-prepare-pull-restore-${formalName dsName}";
-                runtimeInputs = [ "/run/booted-system/sw" ];
-                runtimeEnv.USERS = lib.concatStringsSep " " users;
-                runtimeEnv.DATASET = dsName;
-                text = ''
-                  # TODO: only allow user that actually requires access, 
-                  # not all backup users for this dataset
-                  pool=$(echo "$DATASET" | cut -d'/' -f1)
-                  for user in $USERS; do
-                    zfs allow -u "$user" create,receive,mount "$pool"
-                  done
-                '';
-              })
-            ];
+            assertion =
+              let
+                canmount = lib.attrByPath [ "canmount" ] "" cfg.options;
+              in
+              canmount == "noauto" || canmount == "on" || canmount == "";
+            message = "Option 'ezfs.datasets.\"${dsName}\".options.canmount' must be set to 'noauto' or 'on'";
           }
-        )
+          {
+            assertion = config.services.openssh.hostKeys != [ ];
+            message = "services.openssh.hostKeys must be set for ezfs to work";
+          }
+        ]
+      );
+      environment = mapDataset (
+        dsName: cfg:
+        let
+          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
+        in
+        {
+          systemPackages = [
+            pkgs.mbuffer
+            pkgs.lzop
+
+            (pkgs.writeShellApplication {
+              name = "ezfs-create-${formalName dsName}";
+              runtimeInputs = [ "/run/booted-system/sw" ];
+              text = ''
+                zfs create -u ${
+                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") cfg.options)
+                } ${dsName}
+              '';
+            })
+
+            (pkgs.writeShellApplication {
+              name = "ezfs-prepare-pull-restore-${formalName dsName}";
+              runtimeInputs = [ "/run/booted-system/sw" ];
+              runtimeEnv.USERS = lib.concatStringsSep " " users;
+              runtimeEnv.DATASET = dsName;
+              # TODO: only allow user that actually requires access, not all backup users
+              text = ''
+                pool=$(echo "$DATASET" | cut -d'/' -f1)
+                for user in $USERS; do
+                zfs allow -u "$user" create,receive,mount "$pool"
+                done
+              '';
+            })
+          ];
+        }
       );
     }
     {
@@ -346,45 +367,6 @@ in
           };
         }
       );
-    }
-    {
-      boot = mapTarget (
-        { cfg, ... }:
-        {
-          zfs.extraPools = [ (dsToPool cfg.targetDataset) ];
-          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-        }
-      );
-    }
-    {
-      boot = mapDataset (
-        dsName: cfg: {
-          zfs.extraPools = [ (dsToPool dsName) ];
-          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-        }
-      );
-    }
-    {
-      assertions = mapDataset (
-        dsName: cfg: [
-          {
-            assertion =
-              let
-                canmount = lib.attrByPath [ "canmount" ] "" cfg.options;
-              in
-              canmount == "noauto" || canmount == "on" || canmount == "";
-            message = "Option 'ezfs.datasets.\"${dsName}\".options.canmount' must be set to 'noauto' or 'on'";
-          }
-        ]
-      );
-    }
-    {
-      assertions = [
-        {
-          assertion = config.services.openssh.hostKeys != [ ];
-          message = "services.openssh.hostKeys must be set for ezfs to work";
-        }
-      ];
     }
   ];
 }
