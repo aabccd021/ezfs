@@ -14,6 +14,7 @@ let
 in
 {
   test-empty = mkTest ./empty.nix;
+  test-enc-key-from-module-config = mkTest ./enc-key-from-module-config.nix;
   test-idempotent = mkTest ./idempotent.nix;
   test-multi-dataset-no-reboot = mkTest ./multi-dataset-no-reboot.nix;
   test-reboot-after-backup = mkTest ./reboot-after-backup.nix;
