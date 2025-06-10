@@ -19,19 +19,17 @@ let
           host = "server.com";
           user = "mybackupuser";
           publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
+          privateKeySopsName = "ezfs_private_key";
           privateKey = {
             key = "name_of_key";
-            # In this test, this sopsFile will be overriden by sops-mock,
-            # but in production you need to provide a real sops file.
             sopsFile = ../secrets.yaml;
           };
         };
       };
     };
 
-    # required for test only
-    virtualisation.emptyDiskImages = [ 4096 ]; # add /dev/vdb
-    sops.validateSopsFiles = false; # Required for allow-import-from-derivation = false;
+    virtualisation.emptyDiskImages = [ 4096 ];
+    sops.validateSopsFiles = false;
   };
 in
 
@@ -70,7 +68,6 @@ pkgs.testers.runNixOSTest {
       ];
     };
 
-    # simulate putting secrets
     boot.initrd.postDeviceCommands = ''
       echo "encryption key" > /run/encryption_key.txt
       cp -Lr ${mockSecrets.ed25519.bob.private} /run/sshd_host_key
@@ -84,8 +81,6 @@ pkgs.testers.runNixOSTest {
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
       sharedModule
-
-      # Required for test only
       inputs.sops-nix-mock.nixosModules.default
     ];
 
@@ -96,10 +91,9 @@ pkgs.testers.runNixOSTest {
       targetDataset = "backup_zpool/foo_backup";
     };
 
-    # Required for test only
     sops-mock = {
       enable = true;
-      secrets.ezfs_pull_backup_zpool_foo = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
     };
   };
 

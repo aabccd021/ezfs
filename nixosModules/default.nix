@@ -26,6 +26,7 @@ let
             backupName: backupCfg:
             lib.mkIf backupCfg.enable (fn {
               dsName = dsName;
+              backupName = backupName;
               cfg = backupCfg;
             })
           ) dsCfg.pull-backup
@@ -60,9 +61,7 @@ let
       ${cfg.host} ${config.ezfs.sshdPublicKey}
     '';
 
-  sshKey = dsName: config.sops.secrets.${secretName dsName}.path;
-
-  secretName = dsName: "ezfs_pull_backup_${builtins.replaceStrings [ "/" ] [ "_" ] dsName}";
+  sshKey = cfg: config.sops.secrets.${cfg.privateKeySopsName}.path;
 
   source = dsName: cfg: "${cfg.user}@${cfg.host}:${dsName}";
 
@@ -87,6 +86,9 @@ let
         type = lib.types.str;
       };
       publicKey = lib.mkOption {
+        type = lib.types.str;
+      };
+      privateKeySopsName = lib.mkOption {
         type = lib.types.str;
       };
       privateKey = lib.mkOption {
@@ -237,9 +239,9 @@ in
     }
     {
       sops = mapTarget (
-        { dsName, cfg, ... }:
+        { cfg, ... }:
         {
-          secrets.${secretName dsName} = cfg.privateKey // {
+          secrets.${cfg.privateKeySopsName} = cfg.privateKey // {
             owner = config.services.syncoid.user;
             group = config.services.syncoid.group;
           };
@@ -250,11 +252,11 @@ in
     {
       services = lib.mkMerge [
         (mapTarget (
-          { dsName, cfg }:
+          { dsName, cfg, ... }:
           {
             syncoid.enable = true;
             syncoid.commands."pull-backup-${formalName dsName}" = {
-              sshKey = sshKey dsName;
+              sshKey = sshKey cfg;
               source = source dsName cfg;
               target = cfg.targetDataset;
               # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
@@ -280,7 +282,7 @@ in
     {
       environment = lib.mkMerge [
         (mapTarget (
-          { dsName, cfg }:
+          { dsName, cfg, ... }:
           {
             systemPackages = [
               (pkgs.writeShellApplication {
@@ -291,7 +293,7 @@ in
                   # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
                   exec syncoid \
                     ${lib.optionalString (cfg.restoreExtraArgs != [ ]) (lib.escapeShellArg cfg.restoreExtraArgs)} \
-                    --sshkey ${sshKey dsName} \
+                    --sshkey ${sshKey cfg} \
                     --sshoption='StrictHostKeyChecking=yes' \
                     --sshoption='UserKnownHostsFile=${knownHost cfg}' \
                     --no-sync-snap \

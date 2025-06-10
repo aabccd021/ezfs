@@ -19,6 +19,7 @@ let
           host = "server.com";
           user = "mybackupuser";
           publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
+          privateKeySopsName = "ezfs_private_key";
           privateKey = {
             key = "name_of_key";
             # In this test, this sopsFile will be overriden by sops-mock,
@@ -99,7 +100,7 @@ pkgs.testers.runNixOSTest {
     # Required for test only
     sops-mock = {
       enable = true;
-      secrets.ezfs_pull_backup_zpool_foo = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
     };
   };
 
