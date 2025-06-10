@@ -234,33 +234,31 @@ in
 
     }
     {
-      services = lib.mkMerge [
-        (mapTarget (
-          { dsName, cfg, ... }:
-          {
-            syncoid.enable = true;
-            syncoid.commands."pull-backup-${formalName dsName}" = {
-              sshKey = sshKey cfg;
-              source = source dsName cfg;
-              target = cfg.targetDataset;
-              # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
-              sendOptions = "w";
-              # u = don't mount the dataset after restore
-              recvOptions = "u o canmount=off o mountpoint=none o keylocation=file:///dev/null";
-              extraArgs = cfg.pullExtraArgs ++ [
-                "--sshoption='StrictHostKeyChecking=yes'"
-                "--sshoption='UserKnownHostsFile=${knownHost cfg}'"
-                # don't create new snapshot on source before backup, since we already created it with sanoid
-                "--no-sync-snap"
-                # no cons of using this,
-                # don't forget to run `zfs allow -u <username> bookmark <pool>/<dataset>` on the remote host
-                "--create-bookmark"
-              ];
-            };
+      services = mapTarget (
+        { dsName, cfg, ... }:
+        {
+          syncoid.enable = true;
+          syncoid.commands."pull-backup-${formalName dsName}" = {
+            sshKey = sshKey cfg;
+            source = source dsName cfg;
+            target = cfg.targetDataset;
+            # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
+            sendOptions = "w";
+            # u = don't mount the dataset after restore
+            recvOptions = "u o canmount=off o mountpoint=none o keylocation=file:///dev/null";
+            extraArgs = cfg.pullExtraArgs ++ [
+              "--sshoption='StrictHostKeyChecking=yes'"
+              "--sshoption='UserKnownHostsFile=${knownHost cfg}'"
+              # don't create new snapshot on source before backup, since we already created it with sanoid
+              "--no-sync-snap"
+              # no cons of using this,
+              # don't forget to run `zfs allow -u <username> bookmark <pool>/<dataset>` on the remote host
+              "--create-bookmark"
+            ];
+          };
 
-          }
-        ))
-      ];
+        }
+      );
 
     }
     {
