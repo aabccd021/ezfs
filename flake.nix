@@ -4,6 +4,7 @@
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
+  inputs.sops-nix.url = "github:Mic92/sops-nix";
 
   outputs =
     { self, ... }@inputs:
@@ -28,6 +29,10 @@
 
       tests = import ./tests {
         pkgs = pkgs;
+        inputs = {
+          sops-nix = inputs.sops-nix;
+          ezfs.nixosModules = nixosModules;
+        };
       };
 
       devShells.default = pkgs.mkShellNoCC {

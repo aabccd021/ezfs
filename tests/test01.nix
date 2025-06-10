@@ -1,25 +1,24 @@
 {
   pkgs,
+  inputs,
 }:
 
 pkgs.testers.runNixOSTest {
-  name = "integration-start";
+  name = "test01";
 
-  nodes.main.imports = {
+  nodes.main = {
     imports = [
-      ../nixosModules/default.nix
+      inputs.sops-nix.nixosModules.default
+      inputs.ezfs.nixosModules.default
     ];
   };
 
-  nodes.backup.imports = {
+  nodes.backup = {
     imports = [
-      ../nixosModules/default.nix
+      inputs.sops-nix.nixosModules.default
+      inputs.ezfs.nixosModules.default
     ];
   };
 
-  testScript = ''
-    start_all()
-
-    main.wait_for_unit("multi-user.target")
-  '';
+  testScript = '''';
 }

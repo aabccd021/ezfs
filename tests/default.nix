@@ -1,4 +1,12 @@
-{ pkgs }:
+{ pkgs, inputs }:
+let
+  mkTest =
+    nixFile:
+    import nixFile {
+      pkgs = pkgs;
+      inputs = inputs;
+    };
+in
 {
-  # test01 = import ./test01.nix { pkgs = pkgs; };
+  test01 = mkTest ./test01.nix;
 }

@@ -110,6 +110,7 @@ in
       type = lib.types.str;
     };
     datasets = lib.mkOption {
+      default = { };
       type = lib.types.attrsOf (
         lib.types.submodule {
           options = {
