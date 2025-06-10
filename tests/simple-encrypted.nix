@@ -52,7 +52,7 @@ pkgs.testers.runNixOSTest {
 
     services.sanoid = {
       enable = true;
-      datasets."zpool/foo" = { };
+      datasets."zpool/foo".hourly = 1;
     };
 
     ezfs.datasets."zpool/foo" = {
