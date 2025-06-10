@@ -369,6 +369,21 @@ in
 
     }
     {
+      assertions = mapDataset (
+        dsName: cfg: [
+          {
+            assertion =
+              let
+                canmount = lib.attrByPath [ "canmount" ] "" cfg.options;
+              in
+              canmount == "noauto" || canmount == "on" || canmount == "";
+            message = "ezfs.datasets.${dsName}.options.canmount must be set to 'noauto' or 'on'";
+          }
+        ]
+
+      );
+    }
+    {
       assertions = [
         {
           assertion = config.services.openssh.hostKeys != [ ];
