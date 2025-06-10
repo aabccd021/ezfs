@@ -20,5 +20,5 @@ pkgs.testers.runNixOSTest {
     ];
   };
 
-  testScript = '''';
+  testScript = "";
 }
