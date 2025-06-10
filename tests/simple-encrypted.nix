@@ -73,9 +73,8 @@ pkgs.testers.runNixOSTest {
       ];
     };
 
-    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
-
     # simulate putting secrets
+    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
     boot.initrd.postDeviceCommands = ''
       echo "encryption key" > /run/encryption_key.txt
       chmod 400 /run/encryption_key.txt
@@ -102,9 +101,8 @@ pkgs.testers.runNixOSTest {
       targetDataset = "dpool/foo_backup";
     };
 
-    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
-
     # Required for test only
+    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
     sops-mock = {
       enable = true;
       secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
