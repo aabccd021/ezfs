@@ -8,6 +8,8 @@
 # TODO: mount multiple dataset in order
 let
 
+  dsToPool = ds: lib.elemAt (lib.splitString "/" ds) 0;
+
   mapDataset =
     fn:
     lib.mkMerge (lib.mapAttrsToList (ds: cfg: lib.mkIf cfg.enable (fn ds cfg)) config.ezfs.datasets);
@@ -350,29 +352,20 @@ in
       );
     }
     {
-      boot = (
-        mapTarget (
-          { cfg, ... }:
-          let
-            pool = lib.elemAt (lib.splitString "/" cfg.targetDataset) 0;
-          in
-          {
-            zfs.extraPools = [ pool ];
-            zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-          }
-        )
+      boot = mapTarget (
+        { cfg, ... }:
+        {
+          zfs.extraPools = [ (dsToPool cfg.targetDataset) ];
+          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+        }
       );
     }
     {
-      boot = (
-        mapDataset (
-          dsName: cfg: {
-            zfs.extraPools = [
-              (lib.elemAt (lib.splitString "/" dsName) 0)
-            ];
-            zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-          }
-        )
+      boot = mapDataset (
+        dsName: cfg: {
+          zfs.extraPools = [ (dsToPool dsName) ];
+          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+        }
       );
 
     }
