@@ -22,5 +22,6 @@ in
   test-reboot-all = mkTest ./reboot-all.nix;
   test-reboot-all-canmount-on = mkTest ./reboot-all-canmount-on.nix;
   test-reboot-all-canmount-noauto = mkTest ./reboot-all-canmount-noauto.nix;
+  test-idempotent = mkTest ./idempotent.nix;
 
 }

@@ -34,7 +34,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "reboot-after-backup";
+  name = "idempotent";
 
   nodes.server = {
     imports = [
@@ -116,16 +116,12 @@ pkgs.testers.runNixOSTest {
 
     # insert data
     server.succeed("echo 'hello world' > /spool/foo/hello.txt")
+    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
 
     # backup
     server.succeed("systemctl start --wait sanoid")
     desktop.succeed("systemctl start --wait syncoid-pull-backup-spool-foo")
-
-    # reboot
-    server.reboot()
-    desktop.reboot()
-    server.wait_for_unit("multi-user.target")
-    desktop.wait_for_unit("multi-user.target")
+    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
 
     # destroy
     server.succeed("test -f /spool/foo/hello.txt")
@@ -134,7 +130,6 @@ pkgs.testers.runNixOSTest {
 
     # restore
     server.succeed("ezfs-prepare-pull-restore-spool-foo")
-
     desktop.succeed("syncoid-pull-restore-spool-foo")
 
     # setup
@@ -143,5 +138,6 @@ pkgs.testers.runNixOSTest {
     # assert
     server.succeed("test -f /spool/foo/hello.txt")
     server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
+    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
   '';
 }
