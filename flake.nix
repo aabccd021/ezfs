@@ -26,9 +26,9 @@
 
       formatter = treefmtEval.config.build.wrapper;
 
-      # tests = import ./tests.nix {
-      #   pkgs = pkgs;
-      # };
+      tests = import ./tests {
+        pkgs = pkgs;
+      };
 
       devShells.default = pkgs.mkShellNoCC {
         buildInputs = [
@@ -36,10 +36,13 @@
         ];
       };
 
-      packages = devShells // {
-        formatting = treefmtEval.config.build.check self;
-        formatter = formatter;
-      };
+      packages =
+        tests
+        // devShells
+        // {
+          formatting = treefmtEval.config.build.check self;
+          formatter = formatter;
+        };
 
     in
 
