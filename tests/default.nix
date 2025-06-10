@@ -24,5 +24,6 @@ in
   test-reboot-all-canmount-noauto = mkTest ./reboot-all-canmount-noauto.nix;
   test-reboot-all-multi-dataset = mkTest ./reboot-all-multi-dataset.nix;
   test-idempotent = mkTest ./idempotent.nix;
+  test-multi-dataset-no-reboot = mkTest ./multi-dataset-no-reboot.nix;
 
 }
