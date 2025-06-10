@@ -19,4 +19,5 @@ in
   test-reboot-after-restore = mkTest ./reboot-after-restore.nix;
   test-reboot-after-backup = mkTest ./reboot-after-backup.nix;
   test-reboot-after-destroy = mkTest ./reboot-after-destroy.nix;
+  test-reboot-all = mkTest ./reboot-all.nix;
 }
