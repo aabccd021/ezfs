@@ -5,6 +5,8 @@
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
   inputs.sops-nix.url = "github:Mic92/sops-nix";
+  inputs.sops-nix-mock.url = "github:aabccd021/sops-nix-mock";
+  inputs.mock-secrets-nix.url = "github:aabccd021/mock-secrets-nix";
 
   outputs =
     { self, ... }@inputs:
@@ -29,8 +31,10 @@
 
       tests = import ./tests {
         pkgs = pkgs;
+        mockSecrets = inputs.mock-secrets-nix.lib.secrets;
         inputs = {
           sops-nix = inputs.sops-nix;
+          sops-nix-mock = inputs.sops-nix-mock;
           ezfs.nixosModules = nixosModules;
         };
       };

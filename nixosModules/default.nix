@@ -186,7 +186,6 @@ in
             environment.DATASET = ds;
             environment.USER = cfg.user;
             environment.GROUP = cfg.group;
-            environment.MOUNTPOINT = cfg.options.mountpoint;
             script = ''
               set -x
               setOption() {
@@ -215,7 +214,8 @@ in
                 zfs mount "$DATASET"
               fi
 
-              chown "$USER":"$GROUP" "$MOUNTPOINT"
+              mountpoint=$(zfs get -H -o value mountpoint "$DATASET")
+              chown "$USER":"$GROUP" "$mountpoint"
 
               ${lib.concatStringsSep "\n" (
                 lib.mapAttrsToList (n: v: "zfs allow -u ${n} ${lib.concatStringsSep "," v} ${ds}") userAllows
@@ -231,7 +231,7 @@ in
       sops = mapTarget (
         { dsName, cfg, ... }:
         {
-          sops.secrets.${secretName dsName} = cfg.privateKey // {
+          secrets.${secretName dsName} = cfg.privateKey // {
             owner = config.services.syncoid.user;
             group = config.services.syncoid.group;
           };
