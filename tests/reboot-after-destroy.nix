@@ -34,7 +34,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "reboot-after-backup";
+  name = "reboot-after-destroy";
 
   nodes.server = {
     imports = [
@@ -90,6 +90,8 @@ pkgs.testers.runNixOSTest {
       enable = true;
       targetDataset = "dpool/foo_backup";
     };
+
+    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
 
     sops-mock = {
       enable = true;

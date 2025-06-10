@@ -284,16 +284,12 @@ in
         (mapTarget (
           { dsName, cfg, ... }:
           {
+
             systemPackages = [
               (pkgs.writeShellApplication {
                 name = "syncoid-pull-restore-${formalName dsName}";
                 runtimeInputs = [ config.services.syncoid.package ];
-                runtimeEnv.DATASET = cfg.targetDataset;
                 text = ''
-                  pool=$(echo "$DATASET" | cut -d'/' -f1)
-                  if ! zpool list "$pool" >/dev/null 2>&1; then
-                    zpool import "$pool"
-                  fi
                   # TODO: check if source dataset exists before running this script
                   # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
                   exec syncoid \
@@ -363,6 +359,16 @@ in
               cfg.publicKey
             ];
           };
+        }
+      );
+      boot = mapTarget (
+        { cfg, ... }:
+        let
+          pool = lib.elemAt (lib.splitString "/" cfg.targetDataset) 0;
+        in
+        {
+          zfs.extraPools = [ pool ];
+          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
         }
       );
 

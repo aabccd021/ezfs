@@ -91,6 +91,8 @@ pkgs.testers.runNixOSTest {
       targetDataset = "dpool/foo_backup";
     };
 
+    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
+
     sops-mock = {
       enable = true;
       secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
@@ -99,7 +101,7 @@ pkgs.testers.runNixOSTest {
 
   testScript = ''
     server.start(allow_reboot=True)
-    desktop.start()
+    desktop.start(allow_reboot=True)
 
     # create
     server.wait_for_unit("multi-user.target")
@@ -109,7 +111,9 @@ pkgs.testers.runNixOSTest {
 
     # reboot
     server.reboot()
+    desktop.reboot()
     server.wait_for_unit("multi-user.target")
+    desktop.wait_for_unit("multi-user.target")
 
     # insert data
     server.succeed("echo 'hello world' > /spool/foo/hello.txt")

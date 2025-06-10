@@ -91,6 +91,8 @@ pkgs.testers.runNixOSTest {
       targetDataset = "dpool/foo_backup";
     };
 
+    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
+
     sops-mock = {
       enable = true;
       secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
