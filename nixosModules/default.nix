@@ -5,7 +5,6 @@
   ...
 }:
 # TODO: push backup
-# TODO: mount multiple dataset in order
 let
 
   dsToPool = ds: lib.elemAt (lib.splitString "/" ds) 0;
@@ -118,6 +117,10 @@ in
             options = lib.mkOption {
               type = lib.types.attrsOf lib.types.str;
             };
+            dependsOn = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+            };
             user = lib.mkOption {
               type = lib.types.str;
               default = "root";
@@ -143,7 +146,6 @@ in
       systemd = mapDataset (
         ds: cfg:
         let
-
           updateOptions = builtins.removeAttrs cfg.options [
             "encryption"
             "casesensitivity"
@@ -166,6 +168,8 @@ in
 
           users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
 
+          requiredServices = (builtins.map (n: "ezfs-setup-${formalName n}.service") cfg.dependsOn);
+
         in
         {
           services."ezfs-setup-${formalName ds}" = {
@@ -175,7 +179,8 @@ in
             after = [
               "zfs-import.target"
               "sops-install-secrets.service"
-            ];
+            ] ++ requiredServices;
+            requires = requiredServices;
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
             enableStrictShellChecks = true;
@@ -216,12 +221,10 @@ in
               ${lib.concatStringsSep "\n" (
                 lib.mapAttrsToList (n: v: "zfs allow -u ${n} ${lib.concatStringsSep "," v} ${ds}") userAllows
               )}
-
             '';
           };
         }
       );
-
     }
     {
       sops = mapTarget (
@@ -233,7 +236,6 @@ in
           };
         }
       );
-
     }
     {
       services = mapTarget (
@@ -258,17 +260,14 @@ in
               "--create-bookmark"
             ];
           };
-
         }
       );
-
     }
     {
       environment = (
         mapTarget (
           { dsName, cfg, ... }:
           {
-
             systemPackages = [
               (pkgs.writeShellApplication {
                 name = "syncoid-pull-restore-${formalName dsName}";
@@ -299,7 +298,6 @@ in
         mapDataset (
           dsName: cfg:
           let
-
             users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
           in
           {
@@ -331,13 +329,11 @@ in
                   done
                 '';
               })
-
             ];
           }
         )
       );
     }
-
     {
       users = mapSource (
         { cfg, ... }:
@@ -367,7 +363,6 @@ in
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
         }
       );
-
     }
     {
       assertions = mapDataset (
@@ -381,7 +376,6 @@ in
             message = "Option 'ezfs.datasets.\"${dsName}\".options.canmount' must be set to 'noauto' or 'on'";
           }
         ]
-
       );
     }
     {
@@ -391,7 +385,6 @@ in
           message = "services.openssh.hostKeys must be set for ezfs to work";
         }
       ];
-
     }
   ];
 }
