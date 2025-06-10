@@ -21,4 +21,6 @@ in
   test-reboot-after-destroy = mkTest ./reboot-after-destroy.nix;
   test-reboot-all = mkTest ./reboot-all.nix;
   test-reboot-all-canmount-on = mkTest ./reboot-all-canmount-on.nix;
+  test-reboot-all-canmount-noauto = mkTest ./reboot-all-canmount-noauto.nix;
+
 }

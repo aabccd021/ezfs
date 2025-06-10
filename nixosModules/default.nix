@@ -5,10 +5,6 @@
   ...
 }:
 # TODO: push backup
-# TODO: test with `extraPools`
-# TODO: test with disko
-# TODO: test with and without reboot
-# TODO: test with test with `canmount=off` and `canmount=on`
 # TODO: mount multiple dataset in order
 let
 
@@ -310,6 +306,7 @@ in
           {
             systemPackages = [
               pkgs.mbuffer
+              pkgs.lzop
 
               (pkgs.writeShellApplication {
                 name = "ezfs-create-${formalName dsName}";

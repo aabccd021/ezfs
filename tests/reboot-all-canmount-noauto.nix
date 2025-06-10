@@ -14,7 +14,7 @@ let
         options = {
           encryption = "on";
           keyformat = "passphrase";
-          canmount = "on";
+          canmount = "noauto";
         };
         pull-backup.mybackup = {
           host = "server.com";
@@ -35,7 +35,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "reboot-all-canmount-on";
+  name = "reboot-all-canmount-noauto";
 
   nodes.server = {
     imports = [
