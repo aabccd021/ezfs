@@ -351,16 +351,26 @@ in
           };
         }
       );
-      boot = mapTarget (
-        { cfg, ... }:
-        let
-          pool = lib.elemAt (lib.splitString "/" cfg.targetDataset) 0;
-        in
-        {
-          zfs.extraPools = [ pool ];
-          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-        }
-      );
+      boot = lib.mkMerge [
+        (mapTarget (
+          { cfg, ... }:
+          let
+            pool = lib.elemAt (lib.splitString "/" cfg.targetDataset) 0;
+          in
+          {
+            zfs.extraPools = [ pool ];
+            zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+          }
+        ))
+        (mapDataset (
+          dsName: cfg: {
+            zfs.extraPools = [
+              (lib.elemAt (lib.splitString "/" dsName) 0)
+            ];
+            zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+          }
+        ))
+      ];
 
     }
     {

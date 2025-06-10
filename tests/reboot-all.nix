@@ -68,6 +68,8 @@ pkgs.testers.runNixOSTest {
       ];
     };
 
+    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+
     boot.initrd.postDeviceCommands = ''
       echo "encryption key" > /run/encryption_key.txt
       cp -Lr ${mockSecrets.ed25519.bob.private} /run/sshd_host_key

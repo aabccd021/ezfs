@@ -58,6 +58,8 @@ pkgs.testers.runNixOSTest {
       options.keylocation = "file:///run/encryption_key.txt";
     };
 
+    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+
     services.openssh = {
       enable = true;
       hostKeys = [

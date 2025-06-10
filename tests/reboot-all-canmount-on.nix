@@ -75,6 +75,8 @@ pkgs.testers.runNixOSTest {
       chmod -R 400 /run/sshd_host_key
     '';
 
+    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+
   };
 
   nodes.desktop = {
