@@ -12,9 +12,9 @@ let
         options = {
           keyformat = "passphrase";
         };
-        pull-backup.bckp = {
-          host = "main.com";
-          user = "foo-bckp";
+        pull-backup.mybackup = {
+          host = "server.com";
+          user = "foo-mybackup";
           privateKey = {
             sopsFile = ../secrets.yaml;
             key = "name_of_key";
@@ -29,7 +29,7 @@ in
 pkgs.testers.runNixOSTest {
   name = "test01";
 
-  nodes.main = {
+  nodes.server = {
     imports = [
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
@@ -56,7 +56,7 @@ pkgs.testers.runNixOSTest {
 
   };
 
-  nodes.backup = {
+  nodes.desktop = {
     imports = [
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
@@ -64,7 +64,7 @@ pkgs.testers.runNixOSTest {
       sharedModule
     ];
 
-    ezfs.datasets."zpool/foo".pull-backup.bckp = {
+    ezfs.datasets."zpool/foo".pull-backup.mybackup = {
       enable = true;
       targetDataset = "backup_zpool/foo_backup";
     };
