@@ -189,11 +189,6 @@ in
                 fi
               }
 
-              pool=$(echo "$DATASET" | cut -d'/' -f1)
-              if ! zpool list "$pool" >/dev/null 2>&1; then
-                zpool import "$pool"
-              fi
-
               for user in $BACKUP_USERS; do
                 zfs unallow -u "$user" "$DATASET"
               done
