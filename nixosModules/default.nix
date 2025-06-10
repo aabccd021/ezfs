@@ -262,8 +262,8 @@ in
 
     }
     {
-      environment = lib.mkMerge [
-        (mapTarget (
+      environment = (
+        mapTarget (
           { dsName, cfg, ... }:
           {
 
@@ -289,8 +289,12 @@ in
               })
             ];
           }
-        ))
-        (mapDataset (
+        )
+      );
+    }
+    {
+      environment = (
+        mapDataset (
           dsName: cfg:
           let
 
@@ -328,10 +332,10 @@ in
 
             ];
           }
-        ))
-      ];
-
+        )
+      );
     }
+
     {
       users = mapSource (
         { cfg, ... }:
