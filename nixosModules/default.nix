@@ -377,7 +377,7 @@ in
                 canmount = lib.attrByPath [ "canmount" ] "" cfg.options;
               in
               canmount == "noauto" || canmount == "on" || canmount == "";
-            message = "ezfs.datasets.${dsName}.options.canmount must be set to 'noauto' or 'on'";
+            message = "Option 'ezfs.datasets.\"${dsName}\".options.canmount' must be set to 'noauto' or 'on'";
           }
         ]
 
