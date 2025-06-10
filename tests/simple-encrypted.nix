@@ -10,7 +10,7 @@ let
 
     ezfs = {
       sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
-      datasets."zpool/foo" = {
+      datasets."spool/foo" = {
         options = {
           encryption = "on";
           keyformat = "passphrase";
@@ -53,10 +53,10 @@ pkgs.testers.runNixOSTest {
 
     services.sanoid = {
       enable = true;
-      datasets."zpool/foo".hourly = 1;
+      datasets."spool/foo".hourly = 1;
     };
 
-    ezfs.datasets."zpool/foo" = {
+    ezfs.datasets."spool/foo" = {
       enable = true;
       options.keylocation = "file:///run/encryption_key.txt";
     };
@@ -92,7 +92,7 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.datasets."zpool/foo".pull-backup.mybackup = {
+    ezfs.datasets."spool/foo".pull-backup.mybackup = {
       enable = true;
       targetDataset = "dpool/foo_backup";
     };
@@ -109,43 +109,43 @@ pkgs.testers.runNixOSTest {
     server.wait_for_unit("multi-user.target")
 
     # Create a zpool on the server
-    server.succeed("zpool create zpool /dev/vdb")
+    server.succeed("zpool create spool /dev/vdb")
 
     # Create a dataset based on ezfs configuration
-    server.succeed("ezfs-create-zpool-foo")
+    server.succeed("ezfs-create-spool-foo")
 
     # Create a zpool on the desktop
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-zpool-foo")
+    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
 
     # Insert data to the dataset
-    server.succeed("echo 'hello world' > /zpool/foo/hello.txt")
+    server.succeed("echo 'hello world' > /spool/foo/hello.txt")
 
     # Create a snapshot of the dataset
     server.succeed("systemctl start --wait sanoid")
 
     # Pull backup from the server.
     # This service will run periodically, but here we run it manually for testing.
-    desktop.succeed("systemctl start --wait syncoid-pull-backup-zpool-foo")
+    desktop.succeed("systemctl start --wait syncoid-pull-backup-spool-foo")
 
     # Simulate data loss
-    server.succeed("test -f /zpool/foo/hello.txt")
-    server.succeed("zfs destroy -r zpool/foo")
-    server.fail("test -f /zpool/foo/hello.txt")
+    server.succeed("test -f /spool/foo/hello.txt")
+    server.succeed("zfs destroy -r spool/foo")
+    server.fail("test -f /spool/foo/hello.txt")
 
     # Grant permissions required for restoring backup.
-    server.succeed("ezfs-prepare-pull-restore-zpool-foo")
+    server.succeed("ezfs-prepare-pull-restore-spool-foo")
 
     # Restore backup
-    desktop.succeed("syncoid-pull-restore-zpool-foo")
+    desktop.succeed("syncoid-pull-restore-spool-foo")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-zpool-foo")
+    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
 
     # Assert that the data is restored
-    server.succeed("test -f /zpool/foo/hello.txt")
-    server.succeed("cat /zpool/foo/hello.txt | grep '^hello world$'")
+    server.succeed("test -f /spool/foo/hello.txt")
+    server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
   '';
 }
