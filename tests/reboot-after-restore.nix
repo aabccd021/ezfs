@@ -34,7 +34,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "reboot-after-create";
+  name = "reboot-after-restore";
 
   nodes.server = {
     imports = [
