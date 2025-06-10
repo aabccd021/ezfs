@@ -145,11 +145,8 @@ in
       systemd = mapDataset (
         ds: cfg:
         let
-          opts = {
-            canmount = "noauto";
-          } // cfg.options;
 
-          onetimeProperties = [
+          updateOptions = builtins.removeAttrs cfg.options [
             "encryption"
             "casesensitivity"
             "utf8only"
@@ -159,10 +156,6 @@ in
             "pbkdf2salt"
             "keyformat"
           ];
-
-          updateOptions = builtins.removeAttrs opts onetimeProperties;
-
-          serviceName = "ezfs-setup-" + formalName ds;
 
           userAllows = lib.mapAttrs' (tds: tdsCfg: {
             name = tdsCfg.user;
@@ -177,7 +170,7 @@ in
 
         in
         {
-          services.${serviceName} = {
+          services."ezfs-setup-${formalName ds}" = {
             description = "Mount ZFS dataset ${ds}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
