@@ -288,7 +288,12 @@ in
               (pkgs.writeShellApplication {
                 name = "syncoid-pull-restore-${formalName dsName}";
                 runtimeInputs = [ config.services.syncoid.package ];
+                runtimeEnv.DATASET = cfg.targetDataset;
                 text = ''
+                  pool=$(echo "$DATASET" | cut -d'/' -f1)
+                  if ! zpool list "$pool" >/dev/null 2>&1; then
+                    zpool import "$pool"
+                  fi
                   # TODO: check if source dataset exists before running this script
                   # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
                   exec syncoid \
