@@ -36,7 +36,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "test01";
+  name = "simple-encrypted";
 
   nodes.server = {
     imports = [
