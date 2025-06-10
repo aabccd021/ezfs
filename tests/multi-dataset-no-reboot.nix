@@ -5,40 +5,43 @@
   ...
 }:
 let
-  sharedModule = {
-    boot.supportedFilesystems = [ "zfs" ];
+  sharedModule =
+    { config, ... }:
+    {
+      boot.supportedFilesystems = [ "zfs" ];
 
-    ezfs = {
-      sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
-      datasets."spool/shallow" = {
-        options = {
-          mountpoint = "/shallow";
+      ezfs = {
+        sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
+        datasets."spool/shallow" = {
+          options = {
+            mountpoint = "/shallow";
+          };
         };
-      };
-      datasets."spool/foo" = {
-        dependsOn = [ "spool/shallow" ];
-        options = {
-          encryption = "on";
-          keyformat = "passphrase";
-          keylocation = "file:///run/encryption_key.txt";
-          mountpoint = "/shallow/foo";
-        };
-        pull-backup.mybackup = {
-          host = "server.com";
-          user = "mybackupuser";
-          publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
-          privateKeySopsName = "ezfs_private_key";
-          privateKey = {
-            key = "name_of_key";
-            sopsFile = ../secrets.yaml;
+        datasets."spool/foo" = {
+          dependsOn = [ "spool/shallow" ];
+          options = {
+            encryption = "on";
+            keyformat = "passphrase";
+            keylocation = "file:///run/encryption_key.txt";
+            mountpoint = "/shallow/foo";
+          };
+          pull-backup.mybackup = {
+            host = "server.com";
+            user = "mybackupuser";
+            publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
+            privateKeySopsName = "ezfs_private_key";
+            privateKey = {
+              key = "backup_ssh_key";
+              sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
+            };
           };
         };
       };
-    };
 
-    virtualisation.emptyDiskImages = [ 4096 ];
-    sops.validateSopsFiles = false;
-  };
+      virtualisation.emptyDiskImages = [ 4096 ];
+      sops.validateSopsFiles = false;
+      sops.age.keyFile = config.sops-mock.age.keyFile;
+    };
 in
 
 pkgs.testers.runNixOSTest {
@@ -105,7 +108,8 @@ pkgs.testers.runNixOSTest {
 
     sops-mock = {
       enable = true;
-      secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.backup_private_key.key = "backup_ssh_key";
     };
   };
 

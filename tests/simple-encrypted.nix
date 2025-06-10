@@ -5,36 +5,39 @@
   ...
 }:
 let
-  sharedModule = {
-    boot.supportedFilesystems = [ "zfs" ];
+  sharedModule =
+    { config, ... }:
+    {
+      boot.supportedFilesystems = [ "zfs" ];
 
-    ezfs = {
-      sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
-      datasets."spool/foo" = {
-        options = {
-          encryption = "on";
-          keyformat = "passphrase";
-          keylocation = "file:///run/encryption_key.txt";
-        };
-        pull-backup.mybackup = {
-          host = "server.com";
-          user = "mybackupuser";
-          publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
-          privateKeySopsName = "ezfs_private_key";
-          privateKey = {
-            key = "name_of_key";
-            # In this test, this sopsFile will be overriden by sops-mock,
-            # but in production you need to provide a real sops file.
-            sopsFile = ../secrets.yaml;
+      ezfs = {
+        sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
+        datasets."spool/foo" = {
+          options = {
+            encryption = "on";
+            keyformat = "passphrase";
+            keylocation = "file:///run/encryption_key.txt";
+          };
+          pull-backup.mybackup = {
+            host = "server.com";
+            user = "mybackupuser";
+            publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
+            privateKeySopsName = "ezfs_private_key";
+            privateKey = {
+              key = "backup_ssh_key";
+              # In this test, this sopsFile will be overriden by sops-mock,
+              # but in production you need to provide a real sops file.
+              sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
+            };
           };
         };
       };
-    };
 
-    # required for test only
-    virtualisation.emptyDiskImages = [ 4096 ]; # add /dev/vdb
-    sops.validateSopsFiles = false; # Required for allow-import-from-derivation = false;
-  };
+      # required for test only
+      virtualisation.emptyDiskImages = [ 4096 ]; # add /dev/vdb
+      sops.validateSopsFiles = false; # Required for allow-import-from-derivation = false;
+      sops.age.keyFile = config.sops-mock.age.keyFile;
+    };
 in
 
 pkgs.testers.runNixOSTest {
@@ -105,7 +108,8 @@ pkgs.testers.runNixOSTest {
     systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
     sops-mock = {
       enable = true;
-      secrets.ezfs_private_key = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.backup_private_key.key = "backup_ssh_key";
     };
   };
 
