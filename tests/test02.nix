@@ -81,8 +81,10 @@ pkgs.testers.runNixOSTest {
     imports = [
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
-      inputs.sops-nix-mock.nixosModules.default
       sharedModule
+
+      # Required for test only
+      inputs.sops-nix-mock.nixosModules.default
     ];
 
     networking.hostId = "76219b03";
