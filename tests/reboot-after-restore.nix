@@ -107,9 +107,8 @@ pkgs.testers.runNixOSTest {
     server.succeed("ezfs-create-spool-foo")
     desktop.succeed("zpool create dpool /dev/vdb")
 
-    # reboot
-    server.reboot()
-    server.wait_for_unit("multi-user.target")
+    # setup
+    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
 
     # insert data
     server.succeed("echo 'hello world' > /spool/foo/hello.txt")
@@ -127,8 +126,9 @@ pkgs.testers.runNixOSTest {
     server.succeed("ezfs-prepare-pull-restore-spool-foo")
     desktop.succeed("syncoid-pull-restore-spool-foo")
 
-    # setup
-    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
+    # reboot
+    server.reboot()
+    server.wait_for_unit("multi-user.target")
 
     # assert
     server.succeed("test -f /spool/foo/hello.txt")
