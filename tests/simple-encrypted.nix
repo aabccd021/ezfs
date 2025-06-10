@@ -135,8 +135,7 @@ pkgs.testers.runNixOSTest {
     server.fail("test -f /zpool/foo/hello.txt")
 
     # Grant permissions required for restoring backup.
-    # TODO: make this a command
-    server.succeed("zfs allow -u mybackupuser create,receive,mount zpool")
+    server.succeed("ezfs-prepare-pull-restore-zpool-foo")
 
     # Restore backup
     desktop.succeed("syncoid-pull-restore-zpool-foo")

@@ -305,7 +305,12 @@ in
           }
         ))
         (mapDataset (
-          dsName: cfg: {
+          dsName: cfg:
+          let
+
+            users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
+          in
+          {
             systemPackages = [
               pkgs.mbuffer
 
@@ -318,6 +323,22 @@ in
                   } ${dsName}
                 '';
               })
+
+              (pkgs.writeShellApplication {
+                name = "ezfs-prepare-pull-restore-${formalName dsName}";
+                runtimeInputs = [ "/run/booted-system/sw" ];
+                runtimeEnv.USERS = lib.concatStringsSep " " users;
+                runtimeEnv.DATASET = dsName;
+                text = ''
+                  # TODO: only allow user that actually requires access, 
+                  # not all backup users for this dataset
+                  pool=$(echo "$DATASET" | cut -d'/' -f1)
+                  for user in $USERS; do
+                    zfs allow -u "$user" create,receive,mount "$pool"
+                  done
+                '';
+              })
+
             ];
           }
         ))
