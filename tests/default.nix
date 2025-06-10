@@ -14,5 +14,5 @@ let
 in
 {
   test01 = mkTest ./test01.nix;
-  test02 = mkTest ./test02.nix;
+  simple-encrypted = mkTest ./simple-encrypted.nix;
 }
