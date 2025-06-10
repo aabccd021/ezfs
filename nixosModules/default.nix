@@ -160,7 +160,7 @@ in
 
           updateOptions = builtins.removeAttrs opts onetimeProperties;
 
-          serviceName = "ezfs-" + formalName ds;
+          serviceName = "ezfs-setup-" + formalName ds;
 
           userAllows = lib.mapAttrs' (tds: tdsCfg: {
             name = tdsCfg.user;
