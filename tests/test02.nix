@@ -20,8 +20,10 @@ let
           user = "mybackupuser";
           publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
           privateKey = {
-            sopsFile = ../secrets.yaml;
             key = "name_of_key";
+            # In this test, this sopsFile will be overriden by sops-mock,
+            # but in production you need to provide a real sops file.
+            sopsFile = ../secrets.yaml;
           };
         };
       };
