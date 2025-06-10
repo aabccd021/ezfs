@@ -14,6 +14,7 @@ let
         options = {
           encryption = "on";
           keyformat = "passphrase";
+          keylocation = "file:///run/encryption_key.txt";
         };
         pull-backup.mybackup = {
           host = "server.com";
@@ -53,10 +54,7 @@ pkgs.testers.runNixOSTest {
       datasets."spool/foo".hourly = 1;
     };
 
-    ezfs.datasets."spool/foo" = {
-      enable = true;
-      options.keylocation = "file:///run/encryption_key.txt";
-    };
+    ezfs.datasets."spool/foo".enable = true;
 
     services.openssh = {
       enable = true;

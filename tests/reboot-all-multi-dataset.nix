@@ -21,6 +21,7 @@ let
           encryption = "on";
           keyformat = "passphrase";
           mountpoint = "/shallow/foo";
+          keylocation = "file:///run/encryption_key.txt";
         };
         pull-backup.mybackup = {
           host = "server.com";
@@ -60,10 +61,7 @@ pkgs.testers.runNixOSTest {
       datasets."spool/foo".hourly = 1;
     };
 
-    ezfs.datasets."spool/foo" = {
-      enable = true;
-      options.keylocation = "file:///run/encryption_key.txt";
-    };
+    ezfs.datasets."spool/foo".enable = true;
 
     ezfs.datasets."spool/shallow".enable = true;
 
