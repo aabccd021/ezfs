@@ -130,14 +130,14 @@ pkgs.testers.runNixOSTest {
     server.fail("test -f /zpool/foo/hello.txt")
 
     # Grant permissions required for restoring backup.
-    # We don't automate this because we rarely use it, 
-    # and it requires adding permission to pool instead of dataset.
+    # TODO: make this a command
     server.succeed("zfs allow -u mybackupuser create,receive,mount zpool")
 
     # Restore backup
     desktop.succeed("syncoid-pull-restore-zpool-foo")
 
     # Remove permissions required for restoring backup. Optional, but best practice.
+    # TDOO: do this on setup
     server.succeed("zfs unallow -u mybackupuser create,receive,mount zpool")
 
     # Setup and mount the dataset

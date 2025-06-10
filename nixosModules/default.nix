@@ -199,6 +199,7 @@ in
                 zpool import "$pool"
               fi
 
+
               ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") updateOptions)}
 
               encryption=$(zfs get -H -o value encryption "$DATASET")
