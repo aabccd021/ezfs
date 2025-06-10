@@ -145,9 +145,9 @@ in
       systemd = mapDataset (
         ds: cfg:
         let
-          opts = cfg.options // {
+          opts = {
             canmount = "noauto";
-          };
+          } // cfg.options;
 
           onetimeProperties = [
             "encryption"
