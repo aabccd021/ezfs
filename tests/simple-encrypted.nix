@@ -94,7 +94,7 @@ pkgs.testers.runNixOSTest {
 
     ezfs.datasets."zpool/foo".pull-backup.mybackup = {
       enable = true;
-      targetDataset = "backup_zpool/foo_backup";
+      targetDataset = "dpool/foo_backup";
     };
 
     # Required for test only
@@ -115,7 +115,7 @@ pkgs.testers.runNixOSTest {
     server.succeed("ezfs-create-zpool-foo")
 
     # Create a zpool on the desktop
-    desktop.succeed("zpool create backup_zpool /dev/vdb")
+    desktop.succeed("zpool create dpool /dev/vdb")
 
     # Setup and mount the dataset
     server.succeed("systemctl start --wait ezfs-setup-zpool-foo")

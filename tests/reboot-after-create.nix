@@ -88,7 +88,7 @@ pkgs.testers.runNixOSTest {
 
     ezfs.datasets."zpool/foo".pull-backup.mybackup = {
       enable = true;
-      targetDataset = "backup_zpool/foo_backup";
+      targetDataset = "dpool/foo_backup";
     };
 
     sops-mock = {
@@ -105,7 +105,7 @@ pkgs.testers.runNixOSTest {
     server.wait_for_unit("multi-user.target")
     server.succeed("zpool create zpool /dev/vdb")
     server.succeed("ezfs-create-zpool-foo")
-    desktop.succeed("zpool create backup_zpool /dev/vdb")
+    desktop.succeed("zpool create dpool /dev/vdb")
 
     # reboot
     server.reboot()
