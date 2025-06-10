@@ -47,13 +47,17 @@ pkgs.testers.runNixOSTest {
     ];
 
     networking = {
+      # required for zfs
       hostId = "9b037621";
+
+      # make the server accessible via domain `server.com` on NixOS VM test
       domain = "com";
     };
 
+    # Take a snapshot every hour, and retain last 3 snapshots.
     services.sanoid = {
       enable = true;
-      datasets."spool/foo".hourly = 1;
+      datasets."spool/foo".hourly = 3;
     };
 
     ezfs.datasets."spool/foo" = {
