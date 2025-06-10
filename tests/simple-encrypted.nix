@@ -147,7 +147,7 @@ pkgs.testers.runNixOSTest {
     server.succeed("ezfs-prepare-pull-restore-spool-foo")
 
     # Restore backup
-    desktop.succeed("syncoid-pull-restore-spool-foo")
+    desktop.succeed("ezfs-restore-spool-foo")
 
     # Setup and mount the dataset
     server.succeed("systemctl start --wait ezfs-setup-spool-foo")

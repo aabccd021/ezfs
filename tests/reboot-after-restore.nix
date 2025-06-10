@@ -128,7 +128,7 @@ pkgs.testers.runNixOSTest {
 
     # restore
     server.succeed("ezfs-prepare-pull-restore-spool-foo")
-    desktop.succeed("syncoid-pull-restore-spool-foo")
+    desktop.succeed("ezfs-restore-spool-foo")
 
     # reboot
     server.reboot()
