@@ -14,5 +14,6 @@ let
 in
 {
   test01 = mkTest ./test01.nix;
-  simple-encrypted = mkTest ./simple-encrypted.nix;
+  test-simple-encrypted = mkTest ./simple-encrypted.nix;
+  test-reboot-after-create = mkTest ./reboot-after-create.nix;
 }

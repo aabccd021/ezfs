@@ -36,7 +36,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "simple-encrypted";
+  name = "reboot-after-create";
 
   nodes.server = {
     imports = [
@@ -104,46 +104,37 @@ pkgs.testers.runNixOSTest {
   };
 
   testScript = ''
-    start_all()
+    server.start(allow_reboot=True)
+    desktop.start()
+
+    # create
     server.wait_for_unit("multi-user.target")
-
-    # Create a zpool on the server
     server.succeed("zpool create zpool /dev/vdb")
-
-    # Create a dataset based on ezfs configuration
     server.succeed("ezfs-create-zpool-foo")
-
-    # Create a zpool on the desktop
     desktop.succeed("zpool create backup_zpool /dev/vdb")
 
-    # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-zpool-foo")
+    # reboot
+    server.reboot()
+    server.wait_for_unit("multi-user.target")
 
-    # Insert data to the dataset
+    # insert data
     server.succeed("echo 'hello world' > /zpool/foo/hello.txt")
 
-    # Create a snapshot of the dataset
+    # backup
     server.succeed("systemctl start --wait sanoid")
-
-    # Pull backup from the server.
-    # This service will run periodically, but here we run it manually for testing.
     desktop.succeed("systemctl start --wait syncoid-pull-backup-zpool-foo")
 
-    # Simulate data loss
+    # destroy
     server.succeed("test -f /zpool/foo/hello.txt")
     server.succeed("zfs destroy -r zpool/foo")
     server.fail("test -f /zpool/foo/hello.txt")
 
-    # Grant permissions required for restoring backup.
+    # restore
     server.succeed("ezfs-prepare-pull-restore-zpool-foo")
-
-    # Restore backup
     desktop.succeed("syncoid-pull-restore-zpool-foo")
-
-    # Setup and mount the dataset
     server.succeed("systemctl start --wait ezfs-setup-zpool-foo")
 
-    # Assert that the data is restored
+    # assert
     server.succeed("test -f /zpool/foo/hello.txt")
     server.succeed("cat /zpool/foo/hello.txt | grep '^hello world$'")
   '';

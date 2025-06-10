@@ -183,6 +183,7 @@ in
               "zfs-import.target"
               "sops-install-secrets.service"
             ];
+            wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
             enableStrictShellChecks = true;
             environment.DATASET = ds;
