@@ -122,7 +122,7 @@ pkgs.testers.runNixOSTest {
 
     # backup
     server.succeed("systemctl start --wait sanoid")
-    desktop.succeed("systemctl start --wait syncoid-pull-backup-spool-foo")
+    desktop.succeed("systemctl start --wait syncoid-pull-backup-mybackup")
     server.succeed("systemctl start --wait ezfs-setup-spool-foo")
 
     # destroy

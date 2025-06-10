@@ -147,7 +147,7 @@ pkgs.testers.runNixOSTest {
 
     # Pull backup from the server.
     # This service will run periodically, but here we run it manually for testing.
-    desktop.succeed("systemctl start --wait syncoid-pull-backup-spool-foo")
+    desktop.succeed("systemctl start --wait syncoid-pull-backup-mybackup")
 
     # Simulate data loss
     server.succeed("test -f /spool/foo/hello.txt")

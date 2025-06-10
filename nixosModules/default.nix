@@ -249,7 +249,7 @@ in
         }:
         {
           syncoid.enable = true;
-          syncoid.commands."pull-backup-${formalName dsName}" = {
+          syncoid.commands."pull-backup-${backupName}" = {
             sshKey = config.sops.secrets.${sshKey backupName}.path;
             source = source dsName cfg;
             target = cfg.targetDataset;
