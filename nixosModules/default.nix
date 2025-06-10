@@ -171,6 +171,8 @@ in
             ];
           }) cfg.pull-backup;
 
+          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
+
         in
         {
           services.${serviceName} = {
@@ -186,6 +188,7 @@ in
             environment.DATASET = ds;
             environment.USER = cfg.user;
             environment.GROUP = cfg.group;
+            environment.BACKUP_USERS = lib.concatStringsSep " " users;
             script = ''
               set -x
               setOption() {
@@ -199,6 +202,9 @@ in
                 zpool import "$pool"
               fi
 
+              for user in $BACKUP_USERS; do
+                zfs unallow -u "$user" "$DATASET"
+              done
 
               ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") updateOptions)}
 

@@ -141,10 +141,6 @@ pkgs.testers.runNixOSTest {
     # Restore backup
     desktop.succeed("syncoid-pull-restore-zpool-foo")
 
-    # Remove permissions required for restoring backup. Optional, but best practice.
-    # TDOO: do this on setup
-    server.succeed("zfs unallow -u mybackupuser create,receive,mount zpool")
-
     # Setup and mount the dataset
     server.succeed("systemctl start --wait ezfs-setup-zpool-foo")
 
