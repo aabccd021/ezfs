@@ -26,4 +26,5 @@ in
   test-pull-reboot-all-canmount-on = mkTest ./pull-reboot-all-canmount-on.nix;
   test-pull-reboot-all-multi-dataset = mkTest ./pull-reboot-all-multi-dataset.nix;
   test-pull-simple-encrypted = mkTest ./pull-simple-encrypted.nix;
+  test-push-simple-encrypted = mkTest ./push-simple-encrypted.nix;
 }
