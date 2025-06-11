@@ -153,6 +153,33 @@ in
 
   config = lib.mkMerge [
     {
+      assertions =
+        builtins.map
+          (
+            type:
+            let
+              typeHostKeys = builtins.filter (k: k.type == type) config.services.openssh.hostKeys;
+              paths = builtins.map (k: k.path) typeHostKeys;
+              uniquePaths = lib.lists.unique paths;
+              uniqueLength = builtins.length uniquePaths;
+              pathsStr = builtins.concatStringsSep ", " uniquePaths;
+            in
+            {
+              assertion = !config.services.openssh.enable || uniqueLength <= 1;
+              message = ''
+                Duplicate SSH host key with type ${type} is found: ${pathsStr}
+                SSH doesn't support multiple host keys of the same type
+              '';
+            }
+          )
+          [
+            "ed25519"
+            "rsa"
+            "ecdsa"
+            "dsa"
+          ];
+    }
+    {
       systemd = mapDataset (
         { dsId, cfg, ... }:
         let
