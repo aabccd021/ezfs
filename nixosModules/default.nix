@@ -42,7 +42,9 @@ let
           dsCfg = config.ezfs.datasets.${backupCfg.source};
         in
         lib.mkIf dsCfg.enable (fn {
+          dsCfg = dsCfg;
           dsId = backupCfg.source;
+          backupId = backupId;
           cfg = backupCfg;
         })
       ) config.ezfs.pull-backups
@@ -370,19 +372,6 @@ in
               '';
             })
 
-            (pkgs.writeShellApplication {
-              name = "ezfs-prepare-pull-restore-${dsId}";
-              runtimeInputs = [ "/run/booted-system/sw" ];
-              runtimeEnv.USERS = lib.concatStringsSep " " users;
-              runtimeEnv.DATASET = cfg.name;
-              # TODO: only allow user that actually requires access, not all backup users
-              text = ''
-                pool=$(echo "$DATASET" | cut -d'/' -f1)
-                for user in $USERS; do
-                zfs allow -u "$user" create,receive,mount "$pool"
-                done
-              '';
-            })
           ];
         }
       );
@@ -397,6 +386,29 @@ in
               cfg.publicKey
             ];
           };
+        }
+      );
+
+      environment = mapSource (
+        {
+          backupId,
+          dsCfg,
+          cfg,
+          ...
+        }:
+        {
+          systemPackages = [
+            (pkgs.writeShellApplication {
+              name = "ezfs-prepare-restore-pull-backup-${backupId}";
+              runtimeInputs = [ "/run/booted-system/sw" ];
+              runtimeEnv.DATASET = dsCfg.name;
+              runtimeEnv.USER = cfg.user;
+              text = ''
+                pool=$(echo "$DATASET" | cut -d'/' -f1)
+                zfs allow -u "$USER" create,receive,mount "$pool"
+              '';
+            })
+          ];
         }
       );
     }

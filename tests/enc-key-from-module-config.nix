@@ -145,7 +145,7 @@ pkgs.testers.runNixOSTest {
     server.fail("test -f /spool/foo/hello.txt")
 
     # Grant permissions required for restoring backup.
-    server.succeed("ezfs-prepare-pull-restore-myfoo")
+    server.succeed("ezfs-prepare-restore-pull-backup-mybackup")
 
     # Restore backup
     desktop.succeed("ezfs-restore-pull-backup-mybackup")

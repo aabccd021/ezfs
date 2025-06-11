@@ -123,7 +123,7 @@ pkgs.testers.runNixOSTest {
     server.fail("test -f /spool/foo/hello.txt")
 
     # restore
-    server.succeed("ezfs-prepare-pull-restore-myfoo")
+    server.succeed("ezfs-prepare-restore-pull-backup-mybackup")
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # reboot

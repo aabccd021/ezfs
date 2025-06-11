@@ -138,7 +138,7 @@ pkgs.testers.runNixOSTest {
     desktop.wait_for_unit("multi-user.target")
 
     # restore
-    server.succeed("ezfs-prepare-pull-restore-myfoo")
+    server.succeed("ezfs-prepare-restore-pull-backup-mybackup")
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # reboot

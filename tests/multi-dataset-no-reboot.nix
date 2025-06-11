@@ -140,7 +140,7 @@ pkgs.testers.runNixOSTest {
     server.succeed("echo 'shallow' > /shallow/foo/hello.txt")
 
     # restore
-    server.succeed("ezfs-prepare-pull-restore-myfoo")
+    server.succeed("ezfs-prepare-restore-pull-backup-mybackup")
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # setup
