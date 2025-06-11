@@ -54,12 +54,6 @@ pkgs.testers.runNixOSTest {
     # required for zfs
     networking.hostId = "9b037621";
 
-    # Take a snapshot every hour, and retain last 3 snapshots.
-    services.sanoid = {
-      enable = true;
-      datasets."spool/foo".hourly = 3;
-    };
-
     ezfs.datasets.myfoo.enable = true;
 
     services.openssh = {

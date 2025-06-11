@@ -50,11 +50,6 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "9b037621";
 
-    services.sanoid = {
-      enable = true;
-      datasets."spool/foo".hourly = 1;
-    };
-
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
 
     ezfs.datasets.myfoo.enable = true;

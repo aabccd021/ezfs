@@ -58,11 +58,6 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "9b037621";
 
-    services.sanoid = {
-      enable = true;
-      datasets."spool/foo".hourly = 1;
-    };
-
     ezfs.datasets.myshallow.enable = true;
 
     ezfs.datasets.myfoo.enable = true;

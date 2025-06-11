@@ -81,6 +81,10 @@ in
               type = lib.types.listOf lib.types.str;
               default = [ ];
             };
+            sanoidConfig = lib.mkOption {
+              type = lib.types.attrsOf lib.types.anything;
+              default = { };
+            };
             user = lib.mkOption {
               type = lib.types.str;
               default = "root";
@@ -308,6 +312,14 @@ in
       );
     }
     {
+
+      services = mapDataset (
+        { cfg, ... }:
+        {
+          sanoid.enable = true;
+          sanoid.datasets.${cfg.name} = cfg.sanoidConfig;
+        }
+      );
 
       boot = mapDataset (
         { cfg, ... }:
