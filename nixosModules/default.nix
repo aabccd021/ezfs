@@ -279,7 +279,7 @@ in
         {
           systemPackages = [
             (pkgs.writeShellApplication {
-              name = "ezfs-restore-${formalName dsName}";
+              name = "ezfs-restore-pull-backup-${backupName}";
               runtimeInputs = [ config.services.syncoid.package ];
               # TODO: check if source dataset exists before running this script
               text = ''

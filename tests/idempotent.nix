@@ -132,7 +132,7 @@ pkgs.testers.runNixOSTest {
 
     # restore
     server.succeed("ezfs-prepare-pull-restore-spool-foo")
-    desktop.succeed("ezfs-restore-spool-foo")
+    desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # setup
     server.succeed("systemctl start --wait ezfs-setup-spool-foo")
