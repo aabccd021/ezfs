@@ -460,13 +460,27 @@ in
           publicKey = config.ezfs.hosts.${hostId}.publicKey;
         in
         {
-          openssh.enable = true;
-          openssh.hostKeys = [
-            {
-              type = lib.elemAt (lib.splitString " " publicKey) 0;
-              path = config.sops.secrets."ezfs_sshd_key".path;
-            }
-          ];
+          openssh = {
+            enable = true;
+            allowSFTP = lib.mkDefault false;
+            settings = {
+              PasswordAuthentication = lib.mkDefault false;
+              PubkeyAuthentication = true;
+              KbdInteractiveAuthentication = lib.mkDefault false;
+              AllowTcpForwarding = lib.mkDefault false;
+              X11Forwarding = lib.mkDefault false;
+              AllowAgentForwarding = lib.mkDefault false;
+              AllowStreamLocalForwarding = lib.mkDefault false;
+              AuthenticationMethods = lib.mkDefault "publickey";
+              DisableForwarding = lib.mkDefault true;
+            };
+            hostKeys = [
+              {
+                type = lib.elemAt (lib.splitString " " publicKey) 0;
+                path = config.sops.secrets."ezfs_sshd_key".path;
+              }
+            ];
+          };
         }
       );
 

@@ -2,9 +2,6 @@
 Easy ZFS configuration for NixOS
 
 # TODO
-- assert no duplicate datset activated
 - push backup
 - create single `ezfs` command reading from json config file
-- set pubkey auth true for ssh, make sure throws error if disabled by external config
-- better sshd config, shouldn't need to set hostKeys ourself
-- make sure no two hostKey with same type
+- limit commands can be executed by backup user
