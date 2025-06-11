@@ -125,6 +125,10 @@ in
             dataset = lib.mkOption {
               type = lib.types.str;
             };
+            sanoidConfig = lib.mkOption {
+              type = lib.types.attrsOf lib.types.anything;
+              default = { };
+            };
             publicKey = lib.mkOption {
               type = lib.types.str;
             };
@@ -258,6 +262,8 @@ in
           ...
         }:
         {
+          sanoid.enable = true;
+          sanoid.datasets.${cfg.dataset} = cfg.sanoidConfig;
           syncoid.enable = true;
           syncoid.commands."pull-backup-${backupId}" = {
             sshKey = config.sops.secrets.${sshKey backupId}.path;
