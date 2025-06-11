@@ -7,5 +7,6 @@ Easy ZFS configuration for NixOS
 - create single `ezfs` command reading from json config file
 - set pubkey auth true for ssh, make sure throws error if disabled by external config
 - better sshd config, shouldn't need to set hostKeys ourself
+- assert encryption, keylocation, keyformat
 - force authentication enabled
 - make sure no two hostKey with same type
