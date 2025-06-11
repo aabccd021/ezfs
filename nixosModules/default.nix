@@ -196,8 +196,7 @@ in
               pathsStr = builtins.concatStringsSep ", " uniquePaths;
             in
             {
-              # TODO: remove this
-              assertion = !config.services.openssh.enable || uniqueLength <= 1;
+              assertion = uniqueLength <= 1;
               message = ''
                 Duplicate SSH host key with type ${type} is found: ${pathsStr}
                 SSH doesn't support multiple host keys of the same type
