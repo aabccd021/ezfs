@@ -2,10 +2,10 @@
 Easy ZFS configuration for NixOS
 
 # TODO
-- make config linear for better naming
+- (flat config) make config linear for better naming
 - sanoid built in
 - create single `ezfs` command reading from json config file
-- pubkey auth true
-- better sshd config
+- set pubkey auth true for ssh, make sure throws error if disabled by external config
+- better sshd config, shouldn't need to set hostKeys ourself
 - force authentication enabled
 - make sure no two hostKey with same type
