@@ -12,10 +12,10 @@ let
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
-        dsId: cfg:
-        lib.mkIf cfg.enable (fn {
+        dsId: dsCfg:
+        lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
           dsId = dsId;
-          cfg = cfg;
+          cfg = dsCfg;
         })
       ) config.ezfs.datasets
     );
@@ -41,7 +41,7 @@ let
         let
           dsCfg = config.ezfs.datasets.${backupCfg.source};
         in
-        lib.mkIf dsCfg.enable (fn {
+        lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
           dsCfg = dsCfg;
           dsId = backupCfg.source;
           backupId = backupId;
@@ -51,9 +51,13 @@ let
     );
 
   knownHost =
-    cfg:
+    backupCfg:
+    let
+      hostId = config.ezfs.datasets.${backupCfg.source}.hostId;
+      publicKey = config.ezfs.hosts.${hostId}.publicKey;
+    in
     pkgs.writeText "known-host" ''
-      ${cfg.host} ${config.ezfs.sshdPublicKey}
+      ${backupCfg.host} ${publicKey}
     '';
 
   sshKey = backupId: "ezfs_pull_backup_ssh_key_${backupId}";
@@ -63,27 +67,42 @@ let
 in
 {
   options.ezfs = {
-    sshdPublicKey = lib.mkOption {
-      type = lib.types.str;
-    };
-    sshdPrivateKey = lib.mkOption {
-      type = lib.types.submodule {
-        options = {
-          sopsFile = lib.mkOption {
-            type = lib.types.path;
+    hosts = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options = {
+            publicKey = lib.mkOption {
+              type = lib.types.str;
+            };
+            privateKey = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  sopsFile = lib.mkOption {
+                    type = lib.types.path;
+                  };
+                  key = lib.mkOption {
+                    type = lib.types.str;
+                  };
+                };
+              };
+            };
           };
-          key = lib.mkOption {
-            type = lib.types.str;
-          };
-        };
-      };
+        }
+      );
+      default = { };
     };
     datasets = lib.mkOption {
       default = { };
       type = lib.types.attrsOf (
         lib.types.submodule {
           options = {
-            enable = lib.mkEnableOption "Enable the ezfs module";
+            enable = lib.mkOption {
+              type = lib.types.bool;
+              default = true;
+            };
+            hostId = lib.mkOption {
+              type = lib.types.str;
+            };
             name = lib.mkOption {
               type = lib.types.str;
             };
@@ -177,6 +196,7 @@ in
               pathsStr = builtins.concatStringsSep ", " uniquePaths;
             in
             {
+              # TODO: remove this
               assertion = !config.services.openssh.enable || uniqueLength <= 1;
               message = ''
                 Duplicate SSH host key with type ${type} is found: ${pathsStr}
@@ -415,15 +435,15 @@ in
       services = mapSource (
         { ... }:
         let
-          # TODO: use mapHost instead of mapSource
-          hostId = "";
+          hostId = config.networking.hostId;
+          publicKey = config.ezfs.hosts.${hostId}.publicKey;
         in
         {
           openssh.enable = true;
           openssh.hostKeys = [
             {
-              type = lib.elemAt (lib.splitString " " config.ezfs.sshdPublicKey) 0;
-              path = config.sops.secrets."ezfs_sshd_key_${hostId}".path;
+              type = lib.elemAt (lib.splitString " " publicKey) 0;
+              path = config.sops.secrets."ezfs_sshd_key".path;
             }
           ];
         }
@@ -431,16 +451,14 @@ in
 
       sops = mapSource (
         {
-          backupId,
-          dsCfg,
-          cfg,
           ...
         }:
         let
-          hostId = "";
+          hostId = config.networking.hostId;
+          privateKey = config.ezfs.hosts.${hostId}.privateKey;
         in
         {
-          secrets."ezfs_sshd_key_${hostId}" = config.ezfs.sshdPrivateKey // {
+          secrets."ezfs_sshd_key" = privateKey // {
             owner = "root";
             group = "root";
           };

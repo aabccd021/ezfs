@@ -11,13 +11,18 @@ let
       boot.supportedFilesystems = [ "zfs" ];
 
       ezfs = {
-        sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
-        sshdPrivateKey = {
-          sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
-          key = "sshd_private_key";
+        hosts = {
+          "9b037621" = {
+            publicKey = builtins.readFile mockSecrets.ed25519.bob.public;
+            privateKey = {
+              sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
+              key = "sshd_private_key";
+            };
+          };
         };
         datasets.myfoo = {
           name = "spool/foo";
+          hostId = "9b037621";
           options = {
             encryption = "on";
             keyformat = "passphrase";
@@ -57,8 +62,6 @@ pkgs.testers.runNixOSTest {
 
     # required for zfs
     networking.hostId = "9b037621";
-
-    ezfs.datasets.myfoo.enable = true;
 
     # simulate putting secrets
     boot.initrd.postDeviceCommands = ''
