@@ -353,10 +353,6 @@ in
       );
       environment = mapDataset (
         { dsId, cfg, ... }:
-        let
-          pullBackups = (lib.filterAttrs (n: v: v.source == dsId) config.ezfs.pull-backups);
-          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
-        in
         {
           systemPackages = [
             pkgs.mbuffer
