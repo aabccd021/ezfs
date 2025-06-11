@@ -28,7 +28,7 @@ let
           };
         };
         pull-backups.mybackup = {
-          dataset = "dpool/foo_backup";
+          targetDatasetName = "dpool/foo_backup";
           source = "myfoo";
           host = "server";
           user = "mybackupuser";

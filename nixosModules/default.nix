@@ -106,7 +106,7 @@ let
 
   pullSource = dsCfg: cfg: "${cfg.user}@${cfg.host}:${dsCfg.name}";
 
-  pushTarget = cfg: "${cfg.user}@${cfg.host}:${cfg.dataset}";
+  pushTarget = pushCfg: "${pushCfg.user}@${pushCfg.host}:${pushCfg.targetDatasetName}";
 
 in
 {
@@ -198,7 +198,7 @@ in
             user = lib.mkOption {
               type = lib.types.str;
             };
-            dataset = lib.mkOption {
+            targetDatasetName = lib.mkOption {
               type = lib.types.str;
             };
             sanoidConfig = lib.mkOption {
@@ -250,7 +250,7 @@ in
             user = lib.mkOption {
               type = lib.types.str;
             };
-            dataset = lib.mkOption {
+            targetDatasetName = lib.mkOption {
               type = lib.types.str;
             };
             sanoidConfig = lib.mkOption {
@@ -361,7 +361,6 @@ in
         in
         {
           # TODO rename to ezfs-setup-dataset-${dsId}
-          # TODO rename all cfg to pullCfg
           # TODO rename all to target & source
           services."ezfs-setup-${dsId}" = {
             description = "Mount ZFS dataset ${dsId}";
@@ -423,7 +422,7 @@ in
       boot = mapPullTarget (
         { pullCfg, ... }:
         {
-          zfs.extraPools = [ (dsToPool pullCfg.dataset) ];
+          zfs.extraPools = [ (dsToPool pullCfg.targetDatasetName) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
         }
       );
@@ -447,12 +446,12 @@ in
         }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${pullCfg.dataset} = pullCfg.sanoidConfig;
+          sanoid.datasets.${pullCfg.targetDatasetName} = pullCfg.sanoidConfig;
           syncoid.enable = true;
           syncoid.commands."pull-backup-${pullId}" = {
             sshKey = config.sops.secrets.${pullSshKey pullId}.path;
             source = pullSource dsCfg pullCfg;
-            target = pullCfg.dataset;
+            target = pullCfg.targetDatasetName;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
             sendOptions = "w";
             # u = don't mount the dataset after restore
@@ -495,7 +494,7 @@ in
                 --no-privilege-elevation \
                 --sendoptions="w" \
                 --recvoptions="u" \
-                ${pullCfg.dataset} \
+                ${pullCfg.targetDatasetName} \
                 ${pullSource dsCfg pullCfg}
               '';
             })
@@ -652,7 +651,7 @@ in
             after = [ "zfs-import.target" ];
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
-            environment.DATASET = pushCfg.dataset;
+            environment.DATASET = pushCfg.targetDatasetName;
             environment.USER = pushCfg.user;
             script = ''
               set -x
@@ -674,7 +673,7 @@ in
             (pkgs.writeShellApplication {
               name = "ezfs-prepare-restore-push-backup-${pushId}";
               runtimeInputs = [ "/run/booted-system/sw" ];
-              runtimeEnv.DATASET = pushCfg.dataset;
+              runtimeEnv.DATASET = pushCfg.targetDatasetName;
               runtimeEnv.USER = pushCfg.user;
               text = ''
                 zfs allow -u "$USER" send,hold,bookmark "$DATASET"
@@ -761,7 +760,7 @@ in
         }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${pushCfg.dataset} = pushCfg.sanoidConfig;
+          sanoid.datasets.${pushCfg.targetDatasetName} = pushCfg.sanoidConfig;
           syncoid.enable = true;
           syncoid.commands."push-backup-${pushId}" = {
             sshKey = config.sops.secrets.${pushSshKey pushId}.path;
