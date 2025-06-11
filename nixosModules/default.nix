@@ -464,7 +464,6 @@ in
               "mount"
               "mountpoint"
               "receive"
-              "rollback"
             ];
             extraArgs = pullCfg.pullExtraArgs ++ [
               "--sshoption='StrictHostKeyChecking=yes'"
