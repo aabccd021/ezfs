@@ -15,7 +15,7 @@ let
         dsId: dsCfg:
         lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
           dsId = dsId;
-          cfg = dsCfg;
+          dsCfg = dsCfg;
         })
       ) config.ezfs.datasets
     );
@@ -24,11 +24,11 @@ let
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
-        backupId: backupCfg:
-        lib.mkIf backupCfg.enable (fn {
-          dsCfg = config.ezfs.datasets.${backupCfg.source};
-          backupId = backupId;
-          cfg = backupCfg;
+        pushId: pushCfg:
+        lib.mkIf pushCfg.enable (fn {
+          dsCfg = config.ezfs.datasets.${pushCfg.source};
+          pushId = pushId;
+          pushCfg = pushCfg;
         })
       ) config.ezfs.push-backups
     );
@@ -37,15 +37,15 @@ let
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
-        backupId: backupCfg:
+        pushId: pushCfg:
         let
-          dsCfg = config.ezfs.datasets.${backupCfg.source};
+          dsCfg = config.ezfs.datasets.${pushCfg.source};
         in
         lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
           dsCfg = dsCfg;
-          dsId = backupCfg.source;
-          backupId = backupId;
-          cfg = backupCfg;
+          dsId = pushCfg.source;
+          pushId = pushId;
+          pushCfg = pushCfg;
         })
       ) config.ezfs.push-backups
     );
@@ -81,13 +81,13 @@ let
     );
 
   pullKnownHost =
-    backupCfg:
+    pushCfg:
     let
-      hostId = config.ezfs.datasets.${backupCfg.source}.hostId;
+      hostId = config.ezfs.datasets.${pushCfg.source}.hostId;
       publicKey = config.ezfs.hosts.${hostId}.publicKey;
     in
     pkgs.writeText "known-host" ''
-      ${backupCfg.host} ${publicKey}
+      ${pushCfg.host} ${publicKey}
     '';
 
   pushKnownHost =
@@ -100,9 +100,9 @@ let
       ${pushCfg.host} ${publicKey}
     '';
 
-  pullSshKey = backupId: "ezfs_pull_backup_ssh_key_${backupId}";
+  pullSshKey = pushId: "ezfs_pull_backup_ssh_key_${pushId}";
 
-  pushSshKey = backupId: "ezfs_push_backup_ssh_key_${backupId}";
+  pushSshKey = pushId: "ezfs_push_backup_ssh_key_${pushId}";
 
   pullSource = dsCfg: cfg: "${cfg.user}@${cfg.host}:${dsCfg.name}";
 
@@ -330,9 +330,9 @@ in
     }
     {
       systemd = mapDataset (
-        { dsId, cfg, ... }:
+        { dsId, dsCfg, ... }:
         let
-          updateOptions = builtins.removeAttrs cfg.options [
+          updateOptions = builtins.removeAttrs dsCfg.options [
             "encryption"
             "casesensitivity"
             "utf8only"
@@ -356,7 +356,7 @@ in
 
           users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
 
-          requiredServices = (builtins.map (n: "ezfs-setup-${n}.service") cfg.dependsOn);
+          requiredServices = (builtins.map (n: "ezfs-setup-${n}.service") dsCfg.dependsOn);
 
         in
         {
@@ -375,9 +375,9 @@ in
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
             enableStrictShellChecks = true;
-            environment.DATASET = cfg.name;
-            environment.USER = cfg.user;
-            environment.GROUP = cfg.group;
+            environment.DATASET = dsCfg.name;
+            environment.USER = dsCfg.user;
+            environment.GROUP = dsCfg.group;
             environment.BACKUP_USERS = lib.concatStringsSep " " users;
             script = ''
               set -x
@@ -410,7 +410,9 @@ in
               chown "$USER":"$GROUP" "$mountpoint"
 
               ${lib.concatStringsSep "\n" (
-                lib.mapAttrsToList (n: v: "zfs allow -u ${n} ${lib.concatStringsSep "," v} ${cfg.name}") userAllows
+                lib.mapAttrsToList (
+                  n: v: "zfs allow -u ${n} ${lib.concatStringsSep "," v} ${dsCfg.name}"
+                ) userAllows
               )}
             '';
           };
@@ -504,28 +506,28 @@ in
     {
 
       services = mapDataset (
-        { cfg, ... }:
+        { dsCfg, ... }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${cfg.name} = cfg.sanoidConfig;
+          sanoid.datasets.${dsCfg.name} = dsCfg.sanoidConfig;
         }
       );
 
       boot = mapDataset (
-        { cfg, ... }:
+        { dsCfg, ... }:
         {
-          zfs.extraPools = [ (dsToPool cfg.name) ];
+          zfs.extraPools = [ (dsToPool dsCfg.name) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
         }
       );
 
       assertions = mapDataset (
-        { dsId, cfg, ... }:
+        { dsId, dsCfg, ... }:
         [
           {
             assertion =
               let
-                canmount = lib.attrByPath [ "canmount" ] "" cfg.options;
+                canmount = lib.attrByPath [ "canmount" ] "" dsCfg.options;
               in
               canmount == "noauto" || canmount == "on" || canmount == "";
             message = "Option 'ezfs.datasets.\"${dsId}\".options.canmount' must be set to 'noauto' or 'on'";
@@ -538,7 +540,7 @@ in
       );
 
       environment = mapDataset (
-        { dsId, cfg, ... }:
+        { dsId, dsCfg, ... }:
         {
           systemPackages = [
             (pkgs.writeShellApplication {
@@ -546,8 +548,8 @@ in
               runtimeInputs = [ "/run/booted-system/sw" ];
               text = ''
                 zfs create -u ${
-                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") cfg.options)
-                } ${cfg.name}
+                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") dsCfg.options)
+                } ${dsCfg.name}
               '';
             })
 
@@ -641,21 +643,17 @@ in
     }
     {
       systemd = mapPushTarget (
+        { pushId, pushCfg, ... }:
         {
-          backupId,
-          cfg,
-          ...
-        }:
-        {
-          services."ezfs-setup-push-backup-${backupId}" = {
-            description = "Setup ZFS push backup ${backupId}";
+          services."ezfs-setup-push-backup-${pushId}" = {
+            description = "Setup ZFS push backup ${pushId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
             after = [ "zfs-import.target" ];
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
-            environment.DATASET = cfg.dataset;
-            environment.USER = cfg.user;
+            environment.DATASET = pushCfg.dataset;
+            environment.USER = pushCfg.user;
             script = ''
               set -x
               pool=$(echo "$DATASET" | cut -d'/' -f1)
@@ -668,20 +666,16 @@ in
       );
 
       environment = mapPushTarget (
-        {
-          backupId,
-          cfg,
-          ...
-        }:
+        { pushId, pushCfg, ... }:
         {
           systemPackages = [
             pkgs.mbuffer
             pkgs.lzop
             (pkgs.writeShellApplication {
-              name = "ezfs-prepare-restore-push-backup-${backupId}";
+              name = "ezfs-prepare-restore-push-backup-${pushId}";
               runtimeInputs = [ "/run/booted-system/sw" ];
-              runtimeEnv.DATASET = cfg.dataset;
-              runtimeEnv.USER = cfg.user;
+              runtimeEnv.DATASET = pushCfg.dataset;
+              runtimeEnv.USER = pushCfg.user;
               text = ''
                 zfs allow -u "$USER" send,hold,bookmark "$DATASET"
               '';
@@ -722,9 +716,7 @@ in
       );
 
       sops = mapPushTarget (
-        {
-          ...
-        }:
+        { ... }:
         let
           hostId = config.networking.hostId;
           privateKey = config.ezfs.hosts.${hostId}.privateKey;
@@ -738,12 +730,12 @@ in
       );
 
       users = mapPushTarget (
-        { cfg, ... }:
+        { pushCfg, ... }:
         {
-          users.${cfg.user} = {
+          users.${pushCfg.user} = {
             isNormalUser = true;
             openssh.authorizedKeys.keys = [
-              cfg.publicKey
+              pushCfg.publicKey
             ];
           };
         }
@@ -751,9 +743,9 @@ in
     }
     {
       sops = mapPushSource (
-        { backupId, cfg, ... }:
+        { pushId, pushCfg, ... }:
         {
-          secrets.${pushSshKey backupId} = cfg.privateKey // {
+          secrets.${pushSshKey pushId} = pushCfg.privateKey // {
             owner = config.services.syncoid.user;
             group = config.services.syncoid.group;
           };
@@ -762,26 +754,26 @@ in
 
       services = mapPushSource (
         {
-          backupId,
+          pushId,
           dsCfg,
-          cfg,
+          pushCfg,
           ...
         }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${cfg.dataset} = cfg.sanoidConfig;
+          sanoid.datasets.${pushCfg.dataset} = pushCfg.sanoidConfig;
           syncoid.enable = true;
-          syncoid.commands."push-backup-${backupId}" = {
-            sshKey = config.sops.secrets.${pushSshKey backupId}.path;
+          syncoid.commands."push-backup-${pushId}" = {
+            sshKey = config.sops.secrets.${pushSshKey pushId}.path;
             source = dsCfg.name;
-            target = pushTarget cfg;
+            target = pushTarget pushCfg;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
             sendOptions = "w";
             # u = don't mount the dataset after restore
             recvOptions = "u o canmount=off o mountpoint=none o keylocation=file:///dev/null";
-            extraArgs = cfg.pushExtraArgs ++ [
+            extraArgs = pushCfg.pushExtraArgs ++ [
               "--sshoption='StrictHostKeyChecking=yes'"
-              "--sshoption='UserKnownHostsFile=${pushKnownHost cfg}'"
+              "--sshoption='UserKnownHostsFile=${pushKnownHost pushCfg}'"
               # don't create new snapshot on source before backup, since we already created it with sanoid
               "--no-sync-snap"
               # no cons of using this,
@@ -795,29 +787,31 @@ in
 
       environment = mapPushSource (
         {
-          backupId,
+          pushId,
           dsCfg,
-          cfg,
+          pushCfg,
           ...
         }:
         {
           systemPackages = [
             (pkgs.writeShellApplication {
-              name = "ezfs-restore-push-backup-${backupId}";
+              name = "ezfs-restore-push-backup-${pushId}";
               runtimeInputs = [ config.services.syncoid.package ];
               text = ''
                 # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
                 exec syncoid \
-                ${lib.optionalString (cfg.restoreExtraArgs != [ ]) (lib.escapeShellArg cfg.restoreExtraArgs)} \
-                --sshkey ${config.sops.secrets.${pushSshKey backupId}.path} \
+                ${
+                  lib.optionalString (pushCfg.restoreExtraArgs != [ ]) (lib.escapeShellArg pushCfg.restoreExtraArgs)
+                } \
+                --sshkey ${config.sops.secrets.${pushSshKey pushId}.path} \
                 --sshoption='StrictHostKeyChecking=yes' \
-                --sshoption='UserKnownHostsFile=${pushKnownHost cfg}' \
+                --sshoption='UserKnownHostsFile=${pushKnownHost pushCfg}' \
                 --no-sync-snap \
                 --no-privilege-elevation \
                 --sendoptions="w" \
                 --recvoptions="u" \
                 --debug \
-                ${pushTarget cfg} \
+                ${pushTarget pushCfg} \
                 ${dsCfg.name}
               '';
             })
