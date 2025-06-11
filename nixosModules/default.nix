@@ -43,7 +43,6 @@ let
         in
         lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
           dsCfg = dsCfg;
-          dsId = pushCfg.sourceDatasetId;
           pushId = pushId;
           pushCfg = pushCfg;
         })
