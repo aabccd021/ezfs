@@ -21,7 +21,8 @@ let
 
       ezfs = {
         sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
-        datasets."spool/foo" = {
+        datasets.myfoo = {
+          name = "spool/foo";
           options = {
             encryption = "on";
             keyformat = "passphrase";
@@ -72,7 +73,7 @@ pkgs.testers.runNixOSTest {
       datasets."spool/foo".hourly = 3;
     };
 
-    ezfs.datasets."spool/foo".enable = true;
+    ezfs.datasets.myfoo.enable = true;
 
     services.openssh = {
       enable = true;
@@ -108,9 +109,9 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.datasets."spool/foo".pull-backup.mybackup = {
+    ezfs.datasets.myfoo.pull-backup.mybackup = {
       enable = true;
-      targetDataset = "dpool/foo_backup";
+      dataset = "dpool/foo_backup";
     };
 
     systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
@@ -131,13 +132,13 @@ pkgs.testers.runNixOSTest {
     server.succeed("zpool create spool /dev/vdb")
 
     # Create a dataset based on ezfs configuration
-    server.succeed("ezfs-create-spool-foo")
+    server.succeed("ezfs-create-myfoo")
 
     # Create a zpool on the desktop
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
+    server.succeed("systemctl start --wait ezfs-setup-myfoo")
 
     # Insert data to the dataset
     server.succeed("echo 'hello world' > /spool/foo/hello.txt")
@@ -155,13 +156,13 @@ pkgs.testers.runNixOSTest {
     server.fail("test -f /spool/foo/hello.txt")
 
     # Grant permissions required for restoring backup.
-    server.succeed("ezfs-prepare-pull-restore-spool-foo")
+    server.succeed("ezfs-prepare-pull-restore-myfoo")
 
     # Restore backup
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-spool-foo")
+    server.succeed("systemctl start --wait ezfs-setup-myfoo")
 
     # Assert that the data is restored
     server.succeed("test -f /spool/foo/hello.txt")
