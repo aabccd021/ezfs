@@ -21,6 +21,10 @@ let
 
       ezfs = {
         sshdPublicKey = builtins.readFile mockSecrets.ed25519.bob.public;
+        sshdPrivateKey = {
+          sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
+          key = "sshd_private_key";
+        };
         datasets.myfoo = {
           name = "spool/foo";
           options = {
@@ -46,6 +50,7 @@ let
       virtualisation.emptyDiskImages = [ 4096 ]; # add /dev/vdb
       sops.validateSopsFiles = false; # Required for allow-import-from-derivation = false;
       sops.age.keyFile = config.sops-mock.age.keyFile;
+      imports = [ inputs.sops-nix-mock.nixosModules.default ];
     };
 in
 
@@ -63,25 +68,14 @@ pkgs.testers.runNixOSTest {
 
     ezfs.datasets.myfoo.enable = true;
 
-    services.openssh = {
+    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+    sops-mock = {
       enable = true;
-      hostKeys = [
-        {
-          path = "/run/sshd_host_key";
-          type = "ed25519";
-        }
-      ];
+      secrets.sshd_private_key.value = builtins.readFile mockSecrets.ed25519.bob.private;
+      secrets.sshd_private_key.key = "sshd_private_key";
     };
 
-    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
-
     environment.etc."encryption_key.txt".text = "mysecretkey";
-
-    # simulate putting secrets
-    boot.initrd.postDeviceCommands = ''
-      cp -Lr ${mockSecrets.ed25519.bob.private} /run/sshd_host_key
-      chmod 400 /run/sshd_host_key
-    '';
 
   };
 
@@ -90,9 +84,6 @@ pkgs.testers.runNixOSTest {
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
       sharedModule
-
-      # Required for test only
-      inputs.sops-nix-mock.nixosModules.default
     ];
 
     networking.hostId = "76219b03";

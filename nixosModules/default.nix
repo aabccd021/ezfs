@@ -66,6 +66,18 @@ in
     sshdPublicKey = lib.mkOption {
       type = lib.types.str;
     };
+    sshdPrivateKey = lib.mkOption {
+      type = lib.types.submodule {
+        options = {
+          sopsFile = lib.mkOption {
+            type = lib.types.path;
+          };
+          key = lib.mkOption {
+            type = lib.types.str;
+          };
+        };
+      };
+    };
     datasets = lib.mkOption {
       default = { };
       type = lib.types.attrsOf (
@@ -400,6 +412,41 @@ in
       );
     }
     {
+      services = mapSource (
+        { ... }:
+        let
+          # TODO: use mapHost instead of mapSource
+          hostId = "";
+        in
+        {
+          openssh.enable = true;
+          openssh.hostKeys = [
+            {
+              type = lib.elemAt (lib.splitString " " config.ezfs.sshdPublicKey) 0;
+              path = config.sops.secrets."ezfs_sshd_key_${hostId}".path;
+            }
+          ];
+        }
+      );
+
+      sops = mapSource (
+        {
+          backupId,
+          dsCfg,
+          cfg,
+          ...
+        }:
+        let
+          hostId = "";
+        in
+        {
+          secrets."ezfs_sshd_key_${hostId}" = config.ezfs.sshdPrivateKey // {
+            owner = "root";
+            group = "root";
+          };
+        }
+      );
+
       users = mapSource (
         { cfg, ... }:
         {
