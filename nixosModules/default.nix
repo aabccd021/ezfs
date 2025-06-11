@@ -638,7 +638,6 @@ in
       systemd = mapPushTarget (
         {
           backupId,
-          dsCfg,
           cfg,
           ...
         }:
@@ -655,7 +654,8 @@ in
             script = ''
               set -x
               pool=$(echo "$DATASET" | cut -d'/' -f1)
-              zfs allow -u "$USER" create,receive,mount,canmount,mountpoint,send,hold,bookmark "$pool"
+              zfs unallow -u "$USER" "$pool"
+              zfs allow -u "$USER" create,receive,mount "$pool"
             '';
           };
 
@@ -664,7 +664,6 @@ in
       environment = mapPushTarget (
         {
           backupId,
-          dsCfg,
           cfg,
           ...
         }:
@@ -672,6 +671,15 @@ in
           systemPackages = [
             pkgs.mbuffer
             pkgs.lzop
+            (pkgs.writeShellApplication {
+              name = "ezfs-prepare-restore-push-backup-${backupId}";
+              runtimeInputs = [ "/run/booted-system/sw" ];
+              runtimeEnv.DATASET = cfg.dataset;
+              runtimeEnv.USER = cfg.user;
+              text = ''
+                zfs allow -u "$USER" send,hold,bookmark "$DATASET"
+              '';
+            })
           ];
         }
       );

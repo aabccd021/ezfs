@@ -134,6 +134,7 @@ pkgs.testers.runNixOSTest {
     server.fail("test -f /spool/foo/hello.txt")
 
     # Restore backup
+    vps.succeed("ezfs-prepare-restore-push-backup-mybackup")
     server.succeed("ezfs-restore-push-backup-mybackup")
 
     # Setup and mount the dataset
