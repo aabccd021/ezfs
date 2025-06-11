@@ -28,8 +28,6 @@ let
           publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
           privateKey = {
             key = "backup_ssh_key";
-            # In this test, this sopsFile will be overriden by sops-mock,
-            # but in production you need to provide a real sops file.
             sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
           };
         };
