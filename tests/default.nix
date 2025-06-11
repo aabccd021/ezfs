@@ -21,6 +21,8 @@ in
   test-pull-reboot-all-canmount-noauto = mkTest ./test-pull-reboot-all-canmount-noauto.nix;
   test-pull-reboot-all-canmount-on = mkTest ./test-pull-reboot-all-canmount-on.nix;
   test-pull-reboot-all-multi-dataset = mkTest ./test-pull-reboot-all-multi-dataset.nix;
+  test-pull-states-reboot-all = mkTest ./test-pull-states-reboot-all.nix;
+  test-pull-states = mkTest ./test-pull-states.nix;
   test-pull-encrypted = mkTest ./test-pull-encrypted.nix;
   test-push-encrypted = mkTest ./test-push-encrypted.nix;
 }

@@ -385,8 +385,9 @@ in
                 fi
               }
 
+              pool=$(echo "$DATASET" | cut -d'/' -f1)
               for user in $BACKUP_USERS; do
-                zfs unallow -u "$user" "$DATASET"
+                zfs unallow -u "$user" "$pool"
               done
 
               ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") updateOptions)}
@@ -407,6 +408,7 @@ in
               mountpoint=$(zfs get -H -o value mountpoint "$DATASET")
               chown "$USER":"$GROUP" "$mountpoint"
 
+              zfs unallow -u "$USER" "$DATASET"
               ${lib.concatStringsSep "\n" (
                 lib.mapAttrsToList (
                   n: v: "zfs allow -u ${n} ${lib.concatStringsSep "," v} ${dsCfg.name}"
@@ -455,6 +457,15 @@ in
             sendOptions = "w";
             # u = don't mount the dataset after restore
             recvOptions = "u o canmount=off o mountpoint=none o keylocation=file:///dev/null";
+            localTargetAllow = [
+              "canmount"
+              "create"
+              "keylocation"
+              "mount"
+              "mountpoint"
+              "receive"
+              "rollback"
+            ];
             extraArgs = pullCfg.pullExtraArgs ++ [
               "--sshoption='StrictHostKeyChecking=yes'"
               "--sshoption='UserKnownHostsFile=${pullKnownHost pullCfg}'"
