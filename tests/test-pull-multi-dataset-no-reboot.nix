@@ -28,7 +28,7 @@ pkgs.testers.runNixOSTest {
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # setup
-    server.succeed("systemctl start --wait ezfs-setup-myfoo")
+    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
     # insert data
     server.succeed("echo 'foo' > /shallow/foo/hello.txt")
@@ -50,7 +50,7 @@ pkgs.testers.runNixOSTest {
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # setup
-    server.succeed("systemctl start --wait ezfs-setup-myfoo")
+    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
     # assert
     server.succeed("test -f /shallow/foo/hello.txt")

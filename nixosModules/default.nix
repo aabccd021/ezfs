@@ -357,13 +357,11 @@ in
 
           users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
 
-          requiredServices = (builtins.map (n: "ezfs-setup-${n}.service") dsCfg.dependsOn);
+          requiredServices = (builtins.map (n: "ezfs-setup-dataset-${n}.service") dsCfg.dependsOn);
 
         in
         {
-          # TODO rename to ezfs-setup-dataset-${dsId}
-          # TODO rename all to target & source
-          services."ezfs-setup-${dsId}" = {
+          services."ezfs-setup-dataset-${dsId}" = {
             description = "Mount ZFS dataset ${dsId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";

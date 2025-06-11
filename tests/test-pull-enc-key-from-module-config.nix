@@ -117,7 +117,7 @@ pkgs.testers.runNixOSTest {
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-myfoo")
+    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
     # Insert data to the dataset
     server.succeed("echo 'hello world' > /spool/foo/hello.txt")
@@ -141,7 +141,7 @@ pkgs.testers.runNixOSTest {
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-myfoo")
+    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
     # Assert that the data is restored
     server.succeed("test -f /spool/foo/hello.txt")
