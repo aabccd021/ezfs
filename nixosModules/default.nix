@@ -35,7 +35,7 @@ let
               backupId = backupId;
               cfg = backupCfg;
             })
-          ) dsCfg.pull-backup
+          ) dsCfg.pull-backups
         )
       ) config.ezfs.datasets
     );
@@ -53,7 +53,7 @@ let
                 dsId = dsId;
                 cfg = backupCfg;
               })
-            ) dsCfg.pull-backup
+            ) dsCfg.pull-backups
           )
         )
       ) config.ezfs.datasets
@@ -138,7 +138,7 @@ in
               default = "root";
               description = "The group to own the mounted dataset.";
             };
-            pull-backup = lib.mkOption {
+            pull-backups = lib.mkOption {
               type = lib.types.attrsOf pullOptions;
               default = { };
             };
@@ -171,9 +171,9 @@ in
               "hold"
               "bookmark"
             ];
-          }) cfg.pull-backup;
+          }) cfg.pull-backups;
 
-          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
+          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backups;
 
           requiredServices = (builtins.map (n: "ezfs-setup-${n}.service") cfg.dependsOn);
 
@@ -340,7 +340,7 @@ in
       environment = mapDataset (
         { dsId, cfg, ... }:
         let
-          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backup;
+          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backups;
         in
         {
           systemPackages = [

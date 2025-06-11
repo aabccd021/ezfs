@@ -28,8 +28,8 @@ let
             keyformat = "passphrase";
             keylocation = "file://${config.environment.etc."encryption_key.txt".source}";
           };
-          pull-backup.mybackup = {
-            host = "server.com";
+          pull-backups.mybackup = {
+            host = "server";
             user = "mybackupuser";
             publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
             privateKey = {
@@ -59,13 +59,7 @@ pkgs.testers.runNixOSTest {
       sharedModule
     ];
 
-    networking = {
-      # required for zfs
-      hostId = "9b037621";
-
-      # make the server accessible via domain `server.com` on NixOS VM test
-      domain = "com";
-    };
+    networking.hostId = "9b037621";
 
     # Take a snapshot every hour, and retain last 3 snapshots.
     services.sanoid = {
@@ -109,7 +103,7 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.datasets.myfoo.pull-backup.mybackup = {
+    ezfs.datasets.myfoo.pull-backups.mybackup = {
       enable = true;
       dataset = "dpool/foo_backup";
     };

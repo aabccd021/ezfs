@@ -19,8 +19,8 @@ let
             keyformat = "passphrase";
             keylocation = "file:///run/encryption_key.txt";
           };
-          pull-backup.mybackup = {
-            host = "server.com";
+          pull-backups.mybackup = {
+            host = "server";
             user = "mybackupuser";
             publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
             privateKey = {
@@ -47,10 +47,7 @@ pkgs.testers.runNixOSTest {
       sharedModule
     ];
 
-    networking = {
-      hostId = "9b037621";
-      domain = "com";
-    };
+    networking.hostId = "9b037621";
 
     services.sanoid = {
       enable = true;
@@ -90,7 +87,7 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.datasets.myfoo.pull-backup.mybackup = {
+    ezfs.datasets.myfoo.pull-backups.mybackup = {
       enable = true;
       dataset = "dpool/foo_backup";
     };
