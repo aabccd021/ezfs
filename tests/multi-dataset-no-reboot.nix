@@ -27,14 +27,15 @@ let
             keylocation = "file:///run/encryption_key.txt";
             mountpoint = "/shallow/foo";
           };
-          pull-backups.mybackup = {
-            host = "server";
-            user = "mybackupuser";
-            publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
-            privateKey = {
-              key = "backup_ssh_key";
-              sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
-            };
+        };
+        pull-backups.mybackup = {
+          source = "myfoo";
+          host = "server";
+          user = "mybackupuser";
+          publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
+          privateKey = {
+            key = "backup_ssh_key";
+            sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
           };
         };
       };
@@ -97,7 +98,7 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.datasets.myfoo.pull-backups.mybackup = {
+    ezfs.pull-backups.mybackup = {
       enable = true;
       dataset = "dpool/foo_backup";
     };

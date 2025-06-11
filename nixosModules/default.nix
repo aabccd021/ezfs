@@ -25,38 +25,28 @@ let
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
-        dsId: dsCfg:
-        lib.mkMerge (
-          lib.mapAttrsToList (
-            backupId: backupCfg:
-            lib.mkIf backupCfg.enable (fn {
-              dsId = dsId;
-              dsCfg = dsCfg;
-              backupId = backupId;
-              cfg = backupCfg;
-            })
-          ) dsCfg.pull-backups
-        )
-      ) config.ezfs.datasets
+        backupId: backupCfg:
+        lib.mkIf backupCfg.enable (fn {
+          dsCfg = config.ezfs.datasets.${backupCfg.source};
+          backupId = backupId;
+          cfg = backupCfg;
+        })
+      ) config.ezfs.pull-backups
     );
 
   mapSource =
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
-        dsId: dsCfg:
-        lib.mkIf dsCfg.enable (
-          lib.mkMerge (
-            lib.mapAttrsToList (
-              backupId: backupCfg:
-              (fn {
-                dsId = dsId;
-                cfg = backupCfg;
-              })
-            ) dsCfg.pull-backups
-          )
-        )
-      ) config.ezfs.datasets
+        backupId: backupCfg:
+        let
+          dsCfg = config.ezfs.datasets.${backupCfg.source};
+        in
+        lib.mkIf dsCfg.enable (fn {
+          dsId = backupCfg.source;
+          cfg = backupCfg;
+        })
+      ) config.ezfs.pull-backups
     );
 
   knownHost =
@@ -69,43 +59,6 @@ let
 
   source = dsCfg: cfg: "${cfg.user}@${cfg.host}:${dsCfg.name}";
 
-  pullOptions = lib.types.submodule {
-    options = {
-      enable = lib.mkEnableOption "Enable the pull backup from source dataset";
-      pullExtraArgs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-      };
-      restoreExtraArgs = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-      };
-      host = lib.mkOption {
-        type = lib.types.str;
-      };
-      user = lib.mkOption {
-        type = lib.types.str;
-      };
-      dataset = lib.mkOption {
-        type = lib.types.str;
-      };
-      publicKey = lib.mkOption {
-        type = lib.types.str;
-      };
-      privateKey = lib.mkOption {
-        type = lib.types.submodule {
-          options = {
-            sopsFile = lib.mkOption {
-              type = lib.types.path;
-            };
-            key = lib.mkOption {
-              type = lib.types.str;
-            };
-          };
-        };
-      };
-    };
-  };
 in
 {
   options.ezfs = {
@@ -138,9 +91,50 @@ in
               default = "root";
               description = "The group to own the mounted dataset.";
             };
-            pull-backups = lib.mkOption {
-              type = lib.types.attrsOf pullOptions;
-              default = { };
+          };
+        }
+      );
+    };
+    pull-backups = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options = {
+            enable = lib.mkEnableOption "Enable the pull backup from source dataset";
+            source = lib.mkOption {
+              type = lib.types.str;
+            };
+            pullExtraArgs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+            };
+            restoreExtraArgs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+            };
+            host = lib.mkOption {
+              type = lib.types.str;
+            };
+            user = lib.mkOption {
+              type = lib.types.str;
+            };
+            dataset = lib.mkOption {
+              type = lib.types.str;
+            };
+            publicKey = lib.mkOption {
+              type = lib.types.str;
+            };
+            privateKey = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  sopsFile = lib.mkOption {
+                    type = lib.types.path;
+                  };
+                  key = lib.mkOption {
+                    type = lib.types.str;
+                  };
+                };
+              };
             };
           };
         }
@@ -164,6 +158,8 @@ in
             "keyformat"
           ];
 
+          pullBackups = (lib.filterAttrs (n: v: v.source == dsId) config.ezfs.pull-backups);
+
           userAllows = lib.mapAttrs' (tds: tdsCfg: {
             name = tdsCfg.user;
             value = [
@@ -171,9 +167,9 @@ in
               "hold"
               "bookmark"
             ];
-          }) cfg.pull-backups;
+          }) pullBackups;
 
-          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backups;
+          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
 
           requiredServices = (builtins.map (n: "ezfs-setup-${n}.service") cfg.dependsOn);
 
@@ -340,7 +336,8 @@ in
       environment = mapDataset (
         { dsId, cfg, ... }:
         let
-          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) cfg.pull-backups;
+          pullBackups = (lib.filterAttrs (n: v: v.source == dsId) config.ezfs.pull-backups);
+          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
         in
         {
           systemPackages = [
