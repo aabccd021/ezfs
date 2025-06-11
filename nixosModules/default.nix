@@ -4,7 +4,6 @@
   pkgs,
   ...
 }:
-# TODO: push backup
 let
 
   dsToPool = ds: lib.elemAt (lib.splitString "/" ds) 0;
@@ -297,7 +296,6 @@ in
             (pkgs.writeShellApplication {
               name = "ezfs-restore-pull-backup-${backupId}";
               runtimeInputs = [ config.services.syncoid.package ];
-              # TODO: check if source dataset exists before running this script
               text = ''
                 # recvoptions u: Prevent auto mounting the dataset after restore. Just mount it manually.
                 exec syncoid \
