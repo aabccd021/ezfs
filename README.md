@@ -2,7 +2,6 @@
 Easy ZFS configuration for NixOS
 
 # TODO
-- (flat config) make config linear for better naming
 - sanoid built in
 - create single `ezfs` command reading from json config file
 - set pubkey auth true for ssh, make sure throws error if disabled by external config
