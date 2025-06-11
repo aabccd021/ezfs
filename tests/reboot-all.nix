@@ -21,6 +21,7 @@ let
           };
         };
         pull-backups.mybackup = {
+          dataset = "dpool/foo_backup";
           source = "myfoo";
           host = "server";
           user = "mybackupuser";
@@ -83,10 +84,7 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.pull-backups.mybackup = {
-      enable = true;
-      dataset = "dpool/foo_backup";
-    };
+    ezfs.pull-backups.mybackup.enable = true;
 
     systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
 
