@@ -14,16 +14,16 @@ let
 in
 {
   test-empty = mkTest ./empty.nix;
-  test-enc-key-from-module-config = mkTest ./enc-key-from-module-config.nix;
-  test-idempotent = mkTest ./idempotent.nix;
-  test-multi-dataset-no-reboot = mkTest ./multi-dataset-no-reboot.nix;
-  test-reboot-after-backup = mkTest ./reboot-after-backup.nix;
-  test-reboot-after-create = mkTest ./reboot-after-create.nix;
-  test-reboot-after-destroy = mkTest ./reboot-after-destroy.nix;
-  test-reboot-after-restore = mkTest ./reboot-after-restore.nix;
-  test-reboot-all = mkTest ./reboot-all.nix;
-  test-reboot-all-canmount-noauto = mkTest ./reboot-all-canmount-noauto.nix;
-  test-reboot-all-canmount-on = mkTest ./reboot-all-canmount-on.nix;
-  test-reboot-all-multi-dataset = mkTest ./reboot-all-multi-dataset.nix;
-  test-simple-encrypted = mkTest ./simple-encrypted.nix;
+  test-pull-enc-key-from-module-config = mkTest ./pull-enc-key-from-module-config.nix;
+  test-pull-idempotent = mkTest ./pull-idempotent.nix;
+  test-pull-multi-dataset-no-reboot = mkTest ./pull-multi-dataset-no-reboot.nix;
+  test-pull-reboot-after-backup = mkTest ./pull-reboot-after-backup.nix;
+  test-pull-reboot-after-create = mkTest ./pull-reboot-after-create.nix;
+  test-pull-reboot-after-destroy = mkTest ./pull-reboot-after-destroy.nix;
+  test-pull-reboot-after-restore = mkTest ./pull-reboot-after-restore.nix;
+  test-pull-reboot-all = mkTest ./pull-reboot-all.nix;
+  test-pull-reboot-all-canmount-noauto = mkTest ./pull-reboot-all-canmount-noauto.nix;
+  test-pull-reboot-all-canmount-on = mkTest ./pull-reboot-all-canmount-on.nix;
+  test-pull-reboot-all-multi-dataset = mkTest ./pull-reboot-all-multi-dataset.nix;
+  test-pull-simple-encrypted = mkTest ./pull-simple-encrypted.nix;
 }

@@ -20,7 +20,7 @@ let
       ) config.ezfs.datasets
     );
 
-  mapTarget =
+  mapPullTarget =
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
@@ -33,7 +33,7 @@ let
       ) config.ezfs.pull-backups
     );
 
-  mapSource =
+  mapPullSource =
     fn:
     lib.mkMerge (
       lib.mapAttrsToList (
@@ -319,14 +319,14 @@ in
       );
     }
     {
-      boot = mapTarget (
+      boot = mapPullTarget (
         { cfg, ... }:
         {
           zfs.extraPools = [ (dsToPool cfg.dataset) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
         }
       );
-      sops = mapTarget (
+      sops = mapPullTarget (
         { backupId, cfg, ... }:
         {
           secrets.${sshKey backupId} = cfg.privateKey // {
@@ -335,7 +335,7 @@ in
           };
         }
       );
-      services = mapTarget (
+      services = mapPullTarget (
         {
           backupId,
           dsCfg,
@@ -366,7 +366,7 @@ in
           };
         }
       );
-      environment = mapTarget (
+      environment = mapPullTarget (
         {
           backupId,
           dsCfg,
@@ -453,7 +453,7 @@ in
       );
     }
     {
-      services = mapSource (
+      services = mapPullSource (
         { ... }:
         let
           hostId = config.networking.hostId;
@@ -484,7 +484,7 @@ in
         }
       );
 
-      sops = mapSource (
+      sops = mapPullSource (
         {
           ...
         }:
@@ -500,7 +500,7 @@ in
         }
       );
 
-      users = mapSource (
+      users = mapPullSource (
         { cfg, ... }:
         {
           users.${cfg.user} = {
@@ -512,7 +512,7 @@ in
         }
       );
 
-      environment = mapSource (
+      environment = mapPullSource (
         {
           backupId,
           dsCfg,
