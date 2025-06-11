@@ -38,7 +38,7 @@ let
         };
         pull-backups.mybackup = {
           targetDatasetName = "dpool/foo_backup";
-          source = "myfoo";
+          sourceDatasetId = "myfoo";
           host = "server";
           user = "mybackupuser";
           publicKey = builtins.readFile mockSecrets.ed25519.alice.public;

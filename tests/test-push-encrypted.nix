@@ -31,7 +31,7 @@ let
         };
         push-backups.mybackup = {
           targetDatasetName = "vpool/foo_backup";
-          source = "myfoo";
+          sourceDatasetId = "myfoo";
           hostId = "76219b03";
           host = "vps";
           user = "mybackupuser";

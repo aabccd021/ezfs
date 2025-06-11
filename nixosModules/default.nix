@@ -26,7 +26,7 @@ let
       lib.mapAttrsToList (
         pushId: pushCfg:
         lib.mkIf pushCfg.enable (fn {
-          dsCfg = config.ezfs.datasets.${pushCfg.source};
+          dsCfg = config.ezfs.datasets.${pushCfg.sourceDatasetId};
           pushId = pushId;
           pushCfg = pushCfg;
         })
@@ -39,11 +39,11 @@ let
       lib.mapAttrsToList (
         pushId: pushCfg:
         let
-          dsCfg = config.ezfs.datasets.${pushCfg.source};
+          dsCfg = config.ezfs.datasets.${pushCfg.sourceDatasetId};
         in
         lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
           dsCfg = dsCfg;
-          dsId = pushCfg.source;
+          dsId = pushCfg.sourceDatasetId;
           pushId = pushId;
           pushCfg = pushCfg;
         })
@@ -56,7 +56,7 @@ let
       lib.mapAttrsToList (
         pullId: pullCfg:
         lib.mkIf pullCfg.enable (fn {
-          dsCfg = config.ezfs.datasets.${pullCfg.source};
+          dsCfg = config.ezfs.datasets.${pullCfg.sourceDatasetId};
           pullId = pullId;
           pullCfg = pullCfg;
         })
@@ -69,10 +69,10 @@ let
       lib.mapAttrsToList (
         pullId: pullCfg:
         let
-          dsCfg = config.ezfs.datasets.${pullCfg.source};
+          dsCfg = config.ezfs.datasets.${pullCfg.sourceDatasetId};
         in
         lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
-          dsId = pullCfg.source;
+          dsId = pullCfg.sourceDatasetId;
           dsCfg = dsCfg;
           pullId = pullId;
           pullCfg = pullCfg;
@@ -83,7 +83,7 @@ let
   pullKnownHost =
     pushCfg:
     let
-      hostId = config.ezfs.datasets.${pushCfg.source}.hostId;
+      hostId = config.ezfs.datasets.${pushCfg.sourceDatasetId}.hostId;
       publicKey = config.ezfs.hosts.${hostId}.publicKey;
     in
     pkgs.writeText "known-host" ''
@@ -181,7 +181,7 @@ in
         lib.types.submodule {
           options = {
             enable = lib.mkEnableOption "Enable the pull backup from source dataset";
-            source = lib.mkOption {
+            sourceDatasetId = lib.mkOption {
               type = lib.types.str;
             };
             pullExtraArgs = lib.mkOption {
@@ -230,7 +230,7 @@ in
         lib.types.submodule {
           options = {
             enable = lib.mkEnableOption "Enable the push backup to target dataset";
-            source = lib.mkOption {
+            sourceDatasetId = lib.mkOption {
               type = lib.types.str;
             };
             pushExtraArgs = lib.mkOption {
@@ -343,7 +343,9 @@ in
             "keyformat"
           ];
 
-          pullBackups = (lib.filterAttrs (n: v: v.source == dsId) config.ezfs.pull-backups);
+          pullBackups = (
+            lib.filterAttrs (pullId: pullCfg: pullCfg.sourceDatasetId == dsId) config.ezfs.pull-backups
+          );
 
           userAllows = lib.mapAttrs' (tds: tdsCfg: {
             name = tdsCfg.user;
