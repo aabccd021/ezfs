@@ -191,14 +191,14 @@ in
         builtins.map (
           hostId:
           let
-            hostIdDatasets = builtins.filter (ds: ds.hostId == hostId) config.ezfs.datasets;
+            datasets = builtins.attrValues config.ezfs.datasets;
+            hostIdDatasets = builtins.filter (ds: ds.hostId == hostId) datasets;
             names = builtins.map (ds: ds.name) hostIdDatasets;
             namesUnique = lib.lists.unique names;
             namesStr = builtins.concatStringsSep ", " names;
           in
           {
-            # assertion = builtins.length names == builtins.length namesUnique;
-            assertion = true;
+            assertion = builtins.length namesUnique == builtins.length names;
             message = ''
               Duplicate dataset name is found for hostId ${config.networking.hostId}: ${namesStr}
             '';
