@@ -8,7 +8,7 @@
 pkgs.testers.runNixOSTest {
   name = "multi-dataset-no-reboot";
 
-  nodes = import ./pull-nodes-multi-dataset.nix {
+  nodes = import ./nodes-pull-multi-dataset.nix {
     inputs = inputs;
     mockSecrets = mockSecrets;
   };

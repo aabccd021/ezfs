@@ -6,9 +6,9 @@
 }:
 
 pkgs.testers.runNixOSTest {
-  name = "reboot-after-create";
+  name = "reboot-all-canmount-on";
 
-  nodes = import ./pull-nodes.nix {
+  nodes = import ./nodes-pull-basic.nix {
     inputs = inputs;
     mockSecrets = mockSecrets;
   };
@@ -36,17 +36,30 @@ pkgs.testers.runNixOSTest {
     server.succeed("systemctl start --wait sanoid")
     desktop.succeed("systemctl start --wait syncoid-pull-backup-mybackup")
 
+    # reboot
+    server.reboot()
+    desktop.reboot()
+    server.wait_for_unit("multi-user.target")
+    desktop.wait_for_unit("multi-user.target")
+
     # destroy
     server.succeed("test -f /spool/foo/hello.txt")
     server.succeed("zfs destroy -r spool/foo")
     server.fail("test -f /spool/foo/hello.txt")
 
+    # reboot
+    server.reboot()
+    desktop.reboot()
+    server.wait_for_unit("multi-user.target")
+    desktop.wait_for_unit("multi-user.target")
+
     # restore
     server.succeed("ezfs-prepare-restore-pull-backup-mybackup")
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
-    # setup
-    server.succeed("systemctl start --wait ezfs-setup-myfoo")
+    # reboot
+    server.reboot()
+    server.wait_for_unit("multi-user.target")
 
     # assert
     server.succeed("test -f /spool/foo/hello.txt")

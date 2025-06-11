@@ -7,7 +7,7 @@
 pkgs.testers.runNixOSTest {
   name = "reboot-all";
 
-  nodes = import ./pull-nodes.nix {
+  nodes = import ./nodes-pull-basic.nix {
     inputs = inputs;
     mockSecrets = mockSecrets;
   };

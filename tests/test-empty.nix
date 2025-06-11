@@ -5,7 +5,7 @@
 }:
 
 pkgs.testers.runNixOSTest {
-  name = "test01";
+  name = "empty";
 
   nodes.main = {
     imports = [

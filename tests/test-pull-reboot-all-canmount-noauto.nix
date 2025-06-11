@@ -4,10 +4,11 @@
   mockSecrets,
   ...
 }:
-pkgs.testers.runNixOSTest {
-  name = "reboot-all-multi-dataset";
 
-  nodes = import ./pull-nodes-multi-dataset.nix {
+pkgs.testers.runNixOSTest {
+  name = "reboot-all-canmount-noauto";
+
+  nodes = import ./nodes-pull-basic.nix {
     inputs = inputs;
     mockSecrets = mockSecrets;
   };
@@ -16,15 +17,10 @@ pkgs.testers.runNixOSTest {
     server.start(allow_reboot=True)
     desktop.start(allow_reboot=True)
 
-    # create hello before mounting anything
-    server.wait_for_unit("multi-user.target")
-    server.succeed("mkdir -p /shallow/foo")
-    server.succeed("echo 'not zfs' > /shallow/foo/hello.txt")
-
     # create
+    server.wait_for_unit("multi-user.target")
     server.succeed("zpool create spool /dev/vdb")
     server.succeed("ezfs-create-myfoo")
-    server.succeed("ezfs-create-myshallow")
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # reboot
@@ -34,7 +30,7 @@ pkgs.testers.runNixOSTest {
     desktop.wait_for_unit("multi-user.target")
 
     # insert data
-    server.succeed("echo 'foo' > /shallow/foo/hello.txt")
+    server.succeed("echo 'hello world' > /spool/foo/hello.txt")
 
     # backup
     server.succeed("systemctl start --wait sanoid")
@@ -47,12 +43,9 @@ pkgs.testers.runNixOSTest {
     desktop.wait_for_unit("multi-user.target")
 
     # destroy
-    server.succeed("test -f /shallow/foo/hello.txt")
+    server.succeed("test -f /spool/foo/hello.txt")
     server.succeed("zfs destroy -r spool/foo")
-    server.fail("test -f /shallow/foo/hello.txt")
-
-    # insert to shallow dataset
-    server.succeed("echo 'shallow' > /shallow/foo/hello.txt")
+    server.fail("test -f /spool/foo/hello.txt")
 
     # reboot
     server.reboot()
@@ -69,15 +62,7 @@ pkgs.testers.runNixOSTest {
     server.wait_for_unit("multi-user.target")
 
     # assert
-    server.succeed("test -f /shallow/foo/hello.txt")
-    server.succeed("cat /shallow/foo/hello.txt | grep '^foo$'")
-
-    # unmount foo and check shallow dataset
-    server.succeed("zfs unmount spool/foo")
-    server.succeed("cat /shallow/foo/hello.txt | grep '^shallow$'")
-
-    # unmount shallow and check non-zfs hello.txt
-    server.succeed("zfs unmount spool/shallow");
-    server.succeed("cat /shallow/foo/hello.txt | grep '^not zfs$'")
+    server.succeed("test -f /spool/foo/hello.txt")
+    server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
   '';
 }

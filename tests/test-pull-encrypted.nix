@@ -12,7 +12,7 @@ let
 
       ezfs = {
         hosts = {
-          "76219b03" = {
+          "9b037621" = {
             publicKey = builtins.readFile mockSecrets.ed25519.bob.public;
             privateKey = {
               sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
@@ -29,11 +29,10 @@ let
             keylocation = "file:///run/encryption_key.txt";
           };
         };
-        push-backups.mybackup = {
-          dataset = "vpool/foo_backup";
+        pull-backups.mybackup = {
+          dataset = "dpool/foo_backup";
           source = "myfoo";
-          hostId = "76219b03";
-          host = "vps";
+          host = "server";
           user = "mybackupuser";
           publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
           privateKey = {
@@ -52,7 +51,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "simple-encrypted";
+  name = "encrypted";
 
   nodes.server = {
     imports = [
@@ -74,12 +73,12 @@ pkgs.testers.runNixOSTest {
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
     sops-mock = {
       enable = true;
-      secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
-      secrets.backup_private_key.key = "backup_ssh_key";
+      secrets.sshd_private_key.value = builtins.readFile mockSecrets.ed25519.bob.private;
+      secrets.sshd_private_key.key = "sshd_private_key";
     };
   };
 
-  nodes.vps = {
+  nodes.desktop = {
     imports = [
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
@@ -88,14 +87,14 @@ pkgs.testers.runNixOSTest {
 
     networking.hostId = "76219b03";
 
-    ezfs.push-backups.mybackup.enable = true;
+    ezfs.pull-backups.mybackup.enable = true;
 
     # Required for test only
-    systemd.services."zfs-import-vpool".serviceConfig.TimeoutStartSec = "1s";
+    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
     sops-mock = {
       enable = true;
-      secrets.sshd_private_key.value = builtins.readFile mockSecrets.ed25519.bob.private;
-      secrets.sshd_private_key.key = "sshd_private_key";
+      secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.backup_private_key.key = "backup_ssh_key";
     };
   };
 
@@ -109,11 +108,8 @@ pkgs.testers.runNixOSTest {
     # Create a dataset based on ezfs configuration
     server.succeed("ezfs-create-myfoo")
 
-    # Create a zpool on the vps
-    vps.succeed("zpool create vpool /dev/vdb")
-
-    # Setup on vps
-    vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
+    # Create a zpool on the desktop
+    desktop.succeed("zpool create dpool /dev/vdb")
 
     # Setup and mount the dataset
     server.succeed("systemctl start --wait ezfs-setup-myfoo")
@@ -124,18 +120,20 @@ pkgs.testers.runNixOSTest {
     # Create a snapshot of the dataset
     server.succeed("systemctl start --wait sanoid")
 
-    # Push backup to the vps
+    # Pull backup from the server.
     # This service will run periodically, but here we run it manually for testing.
-    server.succeed("systemctl start --wait syncoid-push-backup-mybackup")
+    desktop.succeed("systemctl start --wait syncoid-pull-backup-mybackup")
 
     # Simulate data loss
     server.succeed("test -f /spool/foo/hello.txt")
     server.succeed("zfs destroy -r spool/foo")
     server.fail("test -f /spool/foo/hello.txt")
 
+    # Grant permissions required for restoring backup.
+    server.succeed("ezfs-prepare-restore-pull-backup-mybackup")
+
     # Restore backup
-    vps.succeed("ezfs-prepare-restore-push-backup-mybackup")
-    server.succeed("ezfs-restore-push-backup-mybackup")
+    desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # Setup and mount the dataset
     server.succeed("systemctl start --wait ezfs-setup-myfoo")

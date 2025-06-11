@@ -1,3 +1,12 @@
+# This test makes sure that `options.keylocation` is lazy loaded
+# (only read when the dataset is enabled).
+#
+# We want to share ezfs config as many as possible between server and desktop,
+# so ideally any options that only used by a specific node doesn't make error on another node.
+#
+# Specifically in this test, `environment.etc."encryption_key.txt".text` only exists on the server,
+# and if we don't implement it correctly, the desktop will fail to build.
+
 {
   pkgs,
   inputs,
@@ -26,7 +35,7 @@ let
           options = {
             encryption = "on";
             keyformat = "passphrase";
-            keylocation = "file:///run/encryption_key.txt";
+            keylocation = "file://${config.environment.etc."encryption_key.txt".source}";
           };
         };
         pull-backups.mybackup = {
@@ -51,7 +60,7 @@ let
 in
 
 pkgs.testers.runNixOSTest {
-  name = "simple-encrypted";
+  name = "enc-key-from-module-config";
 
   nodes.server = {
     imports = [
@@ -60,22 +69,17 @@ pkgs.testers.runNixOSTest {
       sharedModule
     ];
 
-    # required for zfs
     networking.hostId = "9b037621";
 
-    # simulate putting secrets
-    boot.initrd.postDeviceCommands = ''
-      echo "encryption key" > /run/encryption_key.txt
-      chmod 400 /run/encryption_key.txt
-    '';
-
-    # Required for test only
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
     sops-mock = {
       enable = true;
       secrets.sshd_private_key.value = builtins.readFile mockSecrets.ed25519.bob.private;
       secrets.sshd_private_key.key = "sshd_private_key";
     };
+
+    environment.etc."encryption_key.txt".text = "mysecretkey";
+
   };
 
   nodes.desktop = {
@@ -89,8 +93,9 @@ pkgs.testers.runNixOSTest {
 
     ezfs.pull-backups.mybackup.enable = true;
 
-    # Required for test only
     systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
+
+    # Required for test only
     sops-mock = {
       enable = true;
       secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
