@@ -420,11 +420,13 @@ in
       );
     }
     {
+
       boot = mapPullTarget (
         { pullCfg, ... }:
         {
           zfs.extraPools = [ (dsToPool pullCfg.targetDatasetName) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+          supportedFilesystems = [ "zfs" ];
         }
       );
 
@@ -526,6 +528,7 @@ in
         {
           zfs.extraPools = [ (dsToPool dsCfg.name) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+          supportedFilesystems = [ "zfs" ];
         }
       );
 
@@ -650,6 +653,16 @@ in
       );
     }
     {
+
+      boot = mapPushTarget (
+        { pushCfg, ... }:
+        {
+          zfs.extraPools = [ (dsToPool pushCfg.targetDatasetName) ];
+          zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
+          supportedFilesystems = [ "zfs" ];
+        }
+      );
+
       systemd = mapPushTarget (
         { pushId, pushCfg, ... }:
         {

@@ -6,7 +6,6 @@ let
   sharedModule =
     { config, ... }:
     {
-      boot.supportedFilesystems = [ "zfs" ];
 
       ezfs = {
         hosts = {
