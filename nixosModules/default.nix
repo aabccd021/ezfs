@@ -316,16 +316,17 @@ in
           ];
     }
     {
-      # TODO
-      # assetions = mapDataset (
-      #   { dsCfg, ... }:
-      #   [
-      #     {
-      #       assertion = (lib.attrByPath [ "options" "encryption" ] "" dsCfg.options) != "";
-      #       message = "Option 'canmount' is not configurable";
-      #     }
-      #   ]
-      # );
+      # canmount needs to be set to "noauto" to avoid beign mounted automatically by NixOS,
+      # which will ignore `ezfs.datasets.<dataset>.dependsOn`.
+      assertions = mapDataset (
+        { dsCfg, ... }:
+        [
+          {
+            assertion = !(builtins.hasAttr "canmount" dsCfg.options);
+            message = "Option 'canmount' can not be configured";
+          }
+        ]
+      );
       systemd = mapDataset (
         { dsId, dsCfg, ... }:
         let
