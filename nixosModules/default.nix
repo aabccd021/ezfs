@@ -316,7 +316,7 @@ in
           ];
     }
     {
-      # canmount needs to be set to "noauto" to avoid beign mounted automatically by NixOS,
+      # canmount needs to be set to "noauto" to avoid being mounted automatically by NixOS,
       # which will ignore `ezfs.datasets.<dataset>.dependsOn`.
       assertions = mapDataset (
         { dsCfg, ... }:
