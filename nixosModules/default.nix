@@ -418,9 +418,20 @@ in
       boot = mapPullTarget (
         { pullCfg, ... }:
         {
+          supportedFilesystems = [ "zfs" ];
+
           zfs.extraPools = [ (dsToPool pullCfg.targetDatasetName) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-          supportedFilesystems = [ "zfs" ];
+          # NixOS will create `zfs-import-<pool>.service` for each pool specified in
+          #  `zfs.extraPools`.
+          # If `keylocation` is set to `prompt`, it will ask for the encryption key.
+          # If `keylocation` is set to wrong path like `/dev/null`, the service will fail to start.
+          # Both will block the boot process, and prevent us from entering the interactive shell.
+          #
+          # This happens even with canmount=off and mountpoint=none.
+          #
+          # This option will disable that.
+          zfs.requestEncryptionCredentials = lib.mkDefault false;
         }
       );
 
@@ -639,9 +650,10 @@ in
       boot = mapPushTarget (
         { pushCfg, ... }:
         {
+          supportedFilesystems = [ "zfs" ];
           zfs.extraPools = [ (dsToPool pushCfg.targetDatasetName) ];
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
-          supportedFilesystems = [ "zfs" ];
+          zfs.requestEncryptionCredentials = lib.mkDefault false;
         }
       );
 
