@@ -316,6 +316,16 @@ in
           ];
     }
     {
+      # TODO
+      # assetions = mapDataset (
+      #   { dsCfg, ... }:
+      #   [
+      #     {
+      #       assertion = (lib.attrByPath [ "options" "encryption" ] "" dsCfg.options) != "";
+      #       message = "Option 'canmount' is not configurable";
+      #     }
+      #   ]
+      # );
       systemd = mapDataset (
         { dsId, dsCfg, ... }:
         let
@@ -329,6 +339,10 @@ in
             "pbkdf2salt"
             "keyformat"
           ];
+
+          finalUpdateOptions = updateOptions // {
+            canmount = "noauto";
+          };
 
           pullBackups = (
             lib.filterAttrs (pullId: pullCfg: pullCfg.sourceDatasetId == dsId) config.ezfs.pull-backups
@@ -378,7 +392,7 @@ in
                 zfs unallow -u "$user" "$pool"
               done
 
-              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") updateOptions)}
+              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") finalUpdateOptions)}
 
               encryption=$(zfs get -H -o value encryption "$DATASET")
               if [ "$encryption" != "off" ]; then
@@ -389,12 +403,9 @@ in
                 fi
               fi
 
-              canmount=$(zfs get -H -o value canmount "$DATASET")
-              if [ "$canmount" == "on" ]; then
-                mounted=$(zfs get -H -o value mounted "$DATASET")
-                if [ "$mounted" != "yes" ]; then
-                  zfs mount "$DATASET"
-                fi
+              mounted=$(zfs get -H -o value mounted "$DATASET")
+              if [ "$mounted" != "yes" ]; then
+                zfs mount "$DATASET"
               fi
 
               mountpoint=$(zfs get -H -o value mountpoint "$DATASET")
@@ -545,6 +556,11 @@ in
 
       environment = mapDataset (
         { dsId, dsCfg, ... }:
+        let
+          finalOptions = dsCfg.options // {
+            canmount = "noauto";
+          };
+        in
         {
           systemPackages = [
             (pkgs.writeShellApplication {
@@ -552,7 +568,7 @@ in
               runtimeInputs = [ "/run/booted-system/sw" ];
               text = ''
                 zfs create -u ${
-                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") dsCfg.options)
+                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") finalOptions)
                 } ${dsCfg.name}
               '';
             })
