@@ -14,6 +14,8 @@
 
       nixosModules.default = import ./nixosModules/default.nix;
 
+      nixosModules.ezfs = nixosModules.default;
+
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
