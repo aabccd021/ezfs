@@ -156,10 +156,6 @@ in
               type = lib.types.listOf lib.types.str;
               default = [ ];
             };
-            sanoidConfig = lib.mkOption {
-              type = lib.types.attrsOf lib.types.anything;
-              default = { };
-            };
             user = lib.mkOption {
               type = lib.types.str;
               default = "root";
@@ -199,10 +195,6 @@ in
             };
             targetDatasetName = lib.mkOption {
               type = lib.types.str;
-            };
-            sanoidConfig = lib.mkOption {
-              type = lib.types.attrsOf lib.types.anything;
-              default = { };
             };
             publicKey = lib.mkOption {
               type = lib.types.str;
@@ -251,10 +243,6 @@ in
             };
             targetDatasetName = lib.mkOption {
               type = lib.types.str;
-            };
-            sanoidConfig = lib.mkOption {
-              type = lib.types.attrsOf lib.types.anything;
-              default = { };
             };
             publicKey = lib.mkOption {
               type = lib.types.str;
@@ -456,9 +444,9 @@ in
         {
           sanoid.enable = true;
           sanoid.datasets.${pullCfg.targetDatasetName} = {
-            autosnap = true;
-            autoprune = true;
-          } // pullCfg.sanoidConfig;
+            autosnap = lib.mkDefault true;
+            autoprune = lib.mkDefault true;
+          };
           syncoid.enable = true;
           syncoid.commands."pull-backup-${pullId}" = {
             sshKey = config.sops.secrets.${pullSshKey pullId}.path;
@@ -529,9 +517,9 @@ in
         {
           sanoid.enable = true;
           sanoid.datasets.${dsCfg.name} = {
-            autosnap = true;
-            autoprune = true;
-          } // dsCfg.sanoidConfig;
+            autosnap = lib.mkDefault true;
+            autoprune = lib.mkDefault true;
+          };
         }
       );
 
@@ -777,9 +765,9 @@ in
         {
           sanoid.enable = true;
           sanoid.datasets.${pushCfg.targetDatasetName} = {
-            autosnap = true;
-            autoprune = true;
-          } // pushCfg.sanoidConfig;
+            autosnap = lib.mkDefault true;
+            autoprune = lib.mkDefault true;
+          };
           syncoid.enable = true;
           syncoid.commands."push-backup-${pushId}" = {
             sshKey = config.sops.secrets.${pushSshKey pushId}.path;
