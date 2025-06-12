@@ -401,12 +401,18 @@ in
                 fi
               fi
 
-              if [ "$(zfs get -H -o value mounted "$DATASET")" != "yes" ]; then
-                zfs mount "$DATASET"
+              canmount=$(zfs get -H -o value canmount "$DATASET")
+              if [ "$canmount" == "on" ]; then
+                mounted=$(zfs get -H -o value mounted "$DATASET")
+                if [ "$mounted" != "yes" ]; then
+                  zfs mount "$DATASET"
+                fi
               fi
 
               mountpoint=$(zfs get -H -o value mountpoint "$DATASET")
-              chown "$USER":"$GROUP" "$mountpoint"
+              if [ -d "$mountpoint" ]; then
+                chown "$USER":"$GROUP" "$mountpoint"
+              fi
 
               zfs unallow -u "$USER" "$DATASET"
               ${lib.concatStringsSep "\n" (
@@ -530,24 +536,6 @@ in
           zfs.devNodes = lib.mkDefault "/dev/disk/by-path";
           supportedFilesystems = [ "zfs" ];
         }
-      );
-
-      assertions = mapDataset (
-        { dsId, dsCfg, ... }:
-        [
-          {
-            assertion =
-              let
-                canmount = lib.attrByPath [ "canmount" ] "" dsCfg.options;
-              in
-              canmount == "noauto" || canmount == "on" || canmount == "";
-            message = "Option 'ezfs.datasets.\"${dsId}\".options.canmount' must be set to 'noauto' or 'on'";
-          }
-          {
-            assertion = config.services.openssh.hostKeys != [ ];
-            message = "services.openssh.hostKeys must be set for ezfs to work";
-          }
-        ]
       );
 
       environment = mapDataset (

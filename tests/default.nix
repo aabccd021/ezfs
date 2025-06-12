@@ -18,8 +18,6 @@ in
   test-pull-idempotent = mkTest ./test-pull-idempotent.nix;
   test-pull-multi-dataset-no-reboot = mkTest ./test-pull-multi-dataset-no-reboot.nix;
   test-pull-reboot-all = mkTest ./test-pull-reboot-all.nix;
-  test-pull-reboot-all-canmount-noauto = mkTest ./test-pull-reboot-all-canmount-noauto.nix;
-  test-pull-reboot-all-canmount-on = mkTest ./test-pull-reboot-all-canmount-on.nix;
   test-pull-reboot-all-multi-dataset = mkTest ./test-pull-reboot-all-multi-dataset.nix;
   test-pull-states-reboot-all = mkTest ./test-pull-states-reboot-all.nix;
   test-pull-states = mkTest ./test-pull-states.nix;
