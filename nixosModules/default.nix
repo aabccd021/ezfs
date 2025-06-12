@@ -455,7 +455,10 @@ in
         }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${pullCfg.targetDatasetName} = pullCfg.sanoidConfig;
+          sanoid.datasets.${pullCfg.targetDatasetName} = {
+            autosnap = true;
+            autoprune = true;
+          } // pullCfg.sanoidConfig;
           syncoid.enable = true;
           syncoid.commands."pull-backup-${pullId}" = {
             sshKey = config.sops.secrets.${pullSshKey pullId}.path;
@@ -525,7 +528,10 @@ in
         { dsCfg, ... }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${dsCfg.name} = dsCfg.sanoidConfig;
+          sanoid.datasets.${dsCfg.name} = {
+            autosnap = true;
+            autoprune = true;
+          } // dsCfg.sanoidConfig;
         }
       );
 
@@ -770,7 +776,10 @@ in
         }:
         {
           sanoid.enable = true;
-          sanoid.datasets.${pushCfg.targetDatasetName} = pushCfg.sanoidConfig;
+          sanoid.datasets.${pushCfg.targetDatasetName} = {
+            autosnap = true;
+            autoprune = true;
+          } // pushCfg.sanoidConfig;
           syncoid.enable = true;
           syncoid.commands."push-backup-${pushId}" = {
             sshKey = config.sops.secrets.${pushSshKey pushId}.path;
