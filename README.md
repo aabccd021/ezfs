@@ -4,7 +4,8 @@ Easy ZFS configuration for NixOS
 
 # TODO
 
-- assert no failed service
+- assert no failed service on test
+- assert `dependsOn` dataset actually exists
 - server --pull-> homeserver --pull-> desktop
 - server --pull-> desktop --push-> vps
 - more push test
