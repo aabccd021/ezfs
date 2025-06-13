@@ -457,6 +457,19 @@ in
         }
       );
 
+      systemd = mapPullTarget (
+        { pullId, pullCfg, ... }:
+        let
+          pool = dsToPool pullCfg.targetDatasetName;
+        in
+        {
+          services."syncoid-pull-backup-${pullId}" = {
+            requires = [ "zfs-import-${pool}.service" ];
+            after = [ "zfs-import-${pool}.service" ];
+          };
+        }
+      );
+
       services = mapPullTarget (
         {
           pullId,
