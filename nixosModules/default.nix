@@ -360,6 +360,8 @@ in
 
           users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
 
+          pool = dsToPool dsCfg.name;
+
           requiredServices = (builtins.map (n: "ezfs-setup-dataset-${n}.service") dsCfg.dependsOn);
 
         in
@@ -369,8 +371,8 @@ in
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
             after = [
-              "zfs-import.target"
               "sops-install-secrets.service"
+              "zfs-import-${pool}.service"
             ] ++ requiredServices;
             requires = requiredServices;
             wantedBy = [ "multi-user.target" ];
@@ -465,7 +467,10 @@ in
         {
           services."syncoid-pull-backup-${pullId}" = {
             requires = [ "zfs-import-${pool}.service" ];
-            after = [ "zfs-import-${pool}.service" ];
+            after = [
+              "zfs-import-${pool}.service"
+              "sops-install-secrets.service"
+            ];
           };
         }
       );
@@ -682,12 +687,19 @@ in
 
       systemd = mapPushTarget (
         { pushId, pushCfg, ... }:
+        let
+          pool = dsToPool pushCfg.targetDatasetName;
+        in
         {
           services."ezfs-setup-push-backup-${pushId}" = {
             description = "Setup ZFS push backup ${pushId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
-            after = [ "zfs-import.target" ];
+            after = [
+              "sops-install-secrets.service"
+              "zfs-import-${pool}.service"
+            ];
+            requires = [ "zfs-import-${pool}.service" ];
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
             environment.DATASET = pushCfg.targetDatasetName;
