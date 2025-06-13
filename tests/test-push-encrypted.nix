@@ -53,30 +53,47 @@ in
 pkgs.testers.runNixOSTest {
   name = "push-encrypted";
 
-  nodes.server = {
-    imports = [
-      inputs.sops-nix.nixosModules.default
-      inputs.ezfs.nixosModules.default
-      sharedModule
-    ];
+  nodes.server =
+    { config, ... }:
+    {
+      imports = [
+        inputs.sops-nix.nixosModules.default
+        inputs.ezfs.nixosModules.default
+        sharedModule
+      ];
 
-    # required for zfs
-    networking.hostId = "9b037621";
+      # required for zfs
+      networking.hostId = "9b037621";
 
-    # simulate putting secrets
-    boot.initrd.postDeviceCommands = ''
-      echo "encryption key" > /run/encryption_key.txt
-      chmod 400 /run/encryption_key.txt
-    '';
+      # simulate putting secrets
+      boot.initrd.postDeviceCommands = ''
+        echo "encryption key" > /run/encryption_key.txt
+        chmod 400 /run/encryption_key.txt
+      '';
 
-    # Required for test only
-    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
-    sops-mock = {
-      enable = true;
-      secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
-      secrets.backup_private_key.key = "backup_ssh_key";
+      # Required for test only
+      systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+      sops-mock = {
+        enable = true;
+        secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
+        secrets.backup_private_key.key = "backup_ssh_key";
+      };
+
+      assertions =
+        let
+          sanoid_datasets = builtins.attrNames config.services.sanoid.datasets;
+        in
+        [
+          {
+            assertion = builtins.length sanoid_datasets == 1;
+            message = "sanoid should only have one dataset";
+          }
+          {
+            assertion = builtins.elemAt sanoid_datasets 0 == "spool/foo";
+            message = "sanoid dataset should be 'spool/foo', got: ${builtins.elemAt sanoid_datasets 0}";
+          }
+        ];
     };
-  };
 
   nodes.vps = {
     imports = [

@@ -710,12 +710,17 @@ in
       );
 
       services = mapPushTarget (
-        { ... }:
+        { pushCfg, ... }:
         let
           hostId = config.networking.hostId;
           publicKey = config.ezfs.hosts.${hostId}.publicKey;
         in
         {
+          sanoid.enable = true;
+          sanoid.datasets.${pushCfg.targetDatasetName} = {
+            autosnap = lib.mkDefault true;
+            autoprune = lib.mkDefault true;
+          };
           openssh = {
             enable = true;
             allowSFTP = lib.mkDefault false;
@@ -778,11 +783,6 @@ in
           ...
         }:
         {
-          sanoid.enable = true;
-          sanoid.datasets.${pushCfg.targetDatasetName} = {
-            autosnap = lib.mkDefault true;
-            autoprune = lib.mkDefault true;
-          };
           syncoid.enable = true;
           syncoid.commands."push-backup-${pushId}" = {
             sshKey = config.sops.secrets.${pushSshKey pushId}.path;
