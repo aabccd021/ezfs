@@ -590,15 +590,8 @@ in
             enable = true;
             allowSFTP = lib.mkDefault false;
             settings = {
-              PasswordAuthentication = lib.mkDefault false;
               PubkeyAuthentication = true;
-              KbdInteractiveAuthentication = lib.mkDefault false;
-              AllowTcpForwarding = lib.mkDefault false;
-              X11Forwarding = lib.mkDefault false;
-              AllowAgentForwarding = lib.mkDefault false;
-              AllowStreamLocalForwarding = lib.mkDefault false;
               AuthenticationMethods = lib.mkDefault "publickey";
-              DisableForwarding = lib.mkDefault true;
             };
             hostKeys = [
               {
@@ -727,15 +720,8 @@ in
             enable = true;
             allowSFTP = lib.mkDefault false;
             settings = {
-              PasswordAuthentication = lib.mkDefault false;
               PubkeyAuthentication = true;
-              KbdInteractiveAuthentication = lib.mkDefault false;
-              AllowTcpForwarding = lib.mkDefault false;
-              X11Forwarding = lib.mkDefault false;
-              AllowAgentForwarding = lib.mkDefault false;
-              AllowStreamLocalForwarding = lib.mkDefault false;
               AuthenticationMethods = lib.mkDefault "publickey";
-              DisableForwarding = lib.mkDefault true;
             };
             hostKeys = [
               {
