@@ -4,7 +4,6 @@ Easy ZFS configuration for NixOS
 
 # TODO
 
-- fix `zfs-import-zroot`, some service needs to require it
 - test dependson with alphabetical order
 - push to node2
 - assert no failed service on test
