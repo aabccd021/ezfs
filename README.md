@@ -5,7 +5,6 @@ Easy ZFS configuration for NixOS
 # TODO
 
 - test dependson with alphabetical order
-- push to node2
 - assert no failed service on test
 - assert `dependsOn` dataset actually exists
 - server --pull-> homeserver --pull-> desktop
