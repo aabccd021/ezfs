@@ -373,10 +373,16 @@ in
             after = [
               "sops-install-secrets.service"
               "zfs-import-${pool}.service"
+              "zfs.target"
+              "zfs-import.target"
+              "zfs-mount.service"
             ] ++ requiredServices;
             wants = [
               "sops-install-secrets.service"
               "zfs-import-${pool}.service"
+              "zfs.target"
+              "zfs-import.target"
+              "zfs-mount.service"
             ];
             requires = requiredServices;
             wantedBy = [ "multi-user.target" ];
@@ -470,10 +476,19 @@ in
         in
         {
           services."syncoid-pull-backup-${pullId}" = {
-            requires = [ "zfs-import-${pool}.service" ];
+            wants = [
+              "zfs-import-${pool}.service"
+              "sops-install-secrets.service"
+              "zfs.target"
+              "zfs-import.target"
+              "zfs-mount.service"
+            ];
             after = [
               "zfs-import-${pool}.service"
               "sops-install-secrets.service"
+              "zfs.target"
+              "zfs-import.target"
+              "zfs-mount.service"
             ];
           };
         }
