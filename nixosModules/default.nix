@@ -709,6 +709,11 @@ in
               pool=$(echo "$DATASET" | cut -d'/' -f1)
               zfs unallow -u "$USER" "$pool"
               zfs allow -u "$USER" create,receive,mount "$pool"
+
+              # if dataset already exists, we need to set the options
+              if zfs list -H "$DATASET" >/dev/null 2>&1; then
+                zfs allow -u "$USER" canmount,mountpoint,keylocation "$DATASET"
+              fi
             '';
           };
 
