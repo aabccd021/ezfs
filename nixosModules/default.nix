@@ -374,6 +374,10 @@ in
               "sops-install-secrets.service"
               "zfs-import-${pool}.service"
             ] ++ requiredServices;
+            wants = [
+              "sops-install-secrets.service"
+              "zfs-import-${pool}.service"
+            ];
             requires = requiredServices;
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
@@ -698,8 +702,17 @@ in
             after = [
               "sops-install-secrets.service"
               "zfs-import-${pool}.service"
+              "zfs.target"
+              "zfs-import.target"
+              "zfs-mount.service"
             ];
-            requires = [ "zfs-import-${pool}.service" ];
+            wants = [
+              "sops-install-secrets.service"
+              "zfs-import-${pool}.service"
+              "zfs.target"
+              "zfs-import.target"
+              "zfs-mount.service"
+            ];
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
             environment.DATASET = pushCfg.targetDatasetName;
