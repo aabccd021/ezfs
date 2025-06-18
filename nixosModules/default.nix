@@ -504,7 +504,6 @@ in
         {
           sanoid.enable = true;
           sanoid.datasets.${pullCfg.targetDatasetName} = {
-            autosnap = lib.mkDefault true;
             autoprune = lib.mkDefault true;
           };
           syncoid.enable = true;
@@ -776,7 +775,6 @@ in
         {
           sanoid.enable = true;
           sanoid.datasets.${pushCfg.targetDatasetName} = {
-            autosnap = lib.mkDefault true;
             autoprune = lib.mkDefault true;
           };
           openssh = {
