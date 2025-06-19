@@ -13,7 +13,7 @@ pkgs.testers.runNixOSTest {
     mockSecrets = mockSecrets;
   };
 
-  testScript = ''
+  testScript = {nodes, ...}: ''
     server.start(allow_reboot=True)
     desktop.start(allow_reboot=True)
 
