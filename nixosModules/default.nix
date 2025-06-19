@@ -486,12 +486,12 @@ in
       );
 
       systemd = mapPullTarget (
-        { pullId, pullCfg, ... }:
+        { pullCfg, ... }:
         let
           pool = dsToPool pullCfg.targetDatasetName;
         in
         {
-          services."syncoid-pull-backup-${pullId}" = {
+          services.${pullCfg.backupServiceName} = {
             wants = [
               "zfs-import-${pool}.service"
               "sops-install-secrets.service"
