@@ -34,7 +34,7 @@ pkgs.testers.runNixOSTest {
 
       # backup
       server.succeed("systemctl start --wait sanoid")
-      desktop.succeed("systemctl start --wait ${nodes.desktop.config.ezfs.pull-backups.mybackup.backupServiceName}")
+      desktop.succeed("systemctl start --wait ${nodes.desktop.ezfs.pull-backups.mybackup.backupServiceName}")
       server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
       # destroy
