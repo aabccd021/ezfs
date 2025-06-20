@@ -229,6 +229,11 @@ in
         lib.types.submodule {
           options = {
             enable = lib.mkEnableOption "Enable the push backup to target dataset";
+            backupService = lib.mkOption {
+              type = lib.types.str;
+              readOnly = true;
+              default = "syncoid-push-backup-${config._module.args.name}.service";
+            };
             sourceDatasetId = lib.mkOption {
               type = lib.types.str;
             };
