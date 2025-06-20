@@ -178,10 +178,10 @@ in
           {
             options = {
               enable = lib.mkEnableOption "Enable the pull backup from source dataset";
-              backupServiceName = lib.mkOption {
+              backupService = lib.mkOption {
                 type = lib.types.str;
                 readOnly = true;
-                default = "syncoid-pull-backup-${config._module.args.name}";
+                default = "syncoid-pull-backup-${config._module.args.name}.service";
               };
               sourceDatasetId = lib.mkOption {
                 type = lib.types.str;
@@ -226,57 +226,49 @@ in
     push-backups = lib.mkOption {
       default = { };
       type = lib.types.attrsOf (
-        lib.types.submodule (
-          { config, ... }:
-          {
-            options = {
-              enable = lib.mkEnableOption "Enable the push backup to target dataset";
-              backupServiceName = lib.mkOption {
-                type = lib.types.str;
-                readOnly = true;
-                default = "syncoid-push-backup-${config._module.args.name}";
-              };
-              sourceDatasetId = lib.mkOption {
-                type = lib.types.str;
-              };
-              pushExtraArgs = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-              };
-              restoreExtraArgs = lib.mkOption {
-                type = lib.types.listOf lib.types.str;
-                default = [ ];
-              };
-              hostId = lib.mkOption {
-                type = lib.types.str;
-              };
-              host = lib.mkOption {
-                type = lib.types.str;
-              };
-              user = lib.mkOption {
-                type = lib.types.str;
-              };
-              targetDatasetName = lib.mkOption {
-                type = lib.types.str;
-              };
-              publicKey = lib.mkOption {
-                type = lib.types.str;
-              };
-              privateKey = lib.mkOption {
-                type = lib.types.submodule {
-                  options = {
-                    sopsFile = lib.mkOption {
-                      type = lib.types.path;
-                    };
-                    key = lib.mkOption {
-                      type = lib.types.str;
-                    };
+        lib.types.submodule {
+          options = {
+            enable = lib.mkEnableOption "Enable the push backup to target dataset";
+            sourceDatasetId = lib.mkOption {
+              type = lib.types.str;
+            };
+            pushExtraArgs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+            };
+            restoreExtraArgs = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+            };
+            hostId = lib.mkOption {
+              type = lib.types.str;
+            };
+            host = lib.mkOption {
+              type = lib.types.str;
+            };
+            user = lib.mkOption {
+              type = lib.types.str;
+            };
+            targetDatasetName = lib.mkOption {
+              type = lib.types.str;
+            };
+            publicKey = lib.mkOption {
+              type = lib.types.str;
+            };
+            privateKey = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  sopsFile = lib.mkOption {
+                    type = lib.types.path;
+                  };
+                  key = lib.mkOption {
+                    type = lib.types.str;
                   };
                 };
               };
             };
-          }
-        )
+          };
+        }
       );
     };
   };
@@ -486,12 +478,12 @@ in
       );
 
       systemd = mapPullTarget (
-        { pullCfg, ... }:
+        { pullId, pullCfg, ... }:
         let
           pool = dsToPool pullCfg.targetDatasetName;
         in
         {
-          services.${pullCfg.backupServiceName} = {
+          services."syncoid-pull-backup-${pullId}" = {
             wants = [
               "zfs-import-${pool}.service"
               "sops-install-secrets.service"
