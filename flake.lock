@@ -27,11 +27,11 @@
         "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
-        "lastModified": 1750028454,
-        "narHash": "sha256-PjREWuy5BJSXBdD++xwYAull71MsSkxcmWAIXVAppRs=",
+        "lastModified": 1750390944,
+        "narHash": "sha256-b2Rp3eM1ZH0UOEIrn1MzFas8Utw6GRHlQ+/ESpmg6rE=",
         "owner": "aabccd021",
         "repo": "mock-secrets-nix",
-        "rev": "d9250292c386d5b9373943ed397b22592727205f",
+        "rev": "10ec51290a44703f3ee21ddab973eb0af6835477",
         "type": "github"
       },
       "original": {
@@ -267,11 +267,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1750034966,
-        "narHash": "sha256-CjtxRkz3nezx2TB6uZvDYQm/PUwL1tk4BFH9d0sJdVk=",
+        "lastModified": 1750391213,
+        "narHash": "sha256-xFHtiygj5/8gww2iYLcTa3JRtC9HJ39OPXscR/wkxEQ=",
         "owner": "aabccd021",
         "repo": "sops-nix-mock",
-        "rev": "185d9d67151072de91f8305ed6f828ce993491ed",
+        "rev": "672c98d08124fce90ee701280d2872884ea50054",
         "type": "github"
       },
       "original": {
