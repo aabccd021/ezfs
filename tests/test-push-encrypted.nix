@@ -111,49 +111,51 @@ in
     };
   };
 
-  testScript = ''
-    start_all()
-    server.wait_for_unit("multi-user.target")
+  testScript =
+    { nodes, ... }:
+    ''
+      start_all()
+      server.wait_for_unit("multi-user.target")
 
-    # Create a zpool on the server
-    server.succeed("zpool create spool /dev/vdb")
+      # Create a zpool on the server
+      server.succeed("zpool create spool /dev/vdb")
 
-    # Create a dataset based on ezfs configuration
-    server.succeed("ezfs-create-myfoo")
+      # Create a dataset based on ezfs configuration
+      server.succeed("ezfs-create-myfoo")
 
-    # Create a zpool on the vps
-    vps.succeed("zpool create vpool /dev/vdb")
+      # Create a zpool on the vps
+      vps.succeed("zpool create vpool /dev/vdb")
 
-    # Setup on vps
-    vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
+      # Setup on vps
+      vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
 
-    # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      # Setup and mount the dataset
+      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
-    # Insert data to the dataset
-    server.succeed("echo 'hello world' > /spool/foo/hello.txt")
+      # Insert data to the dataset
+      server.succeed("echo 'hello world' > /spool/foo/hello.txt")
 
-    # Create a snapshot of the dataset
-    server.succeed("systemctl start --wait sanoid")
+      # Create a snapshot of the dataset
+      server.succeed("systemctl start --wait sanoid")
 
-    # Push backup to the vps
-    # This service will run periodically, but here we run it manually for testing.
-    server.succeed("systemctl start --wait syncoid-push-backup-mybackup")
+      # Push backup to the vps
+      # This service will run periodically, but here we run it manually for testing.
+      server.succeed("systemctl start --wait ${nodes.server.ezfs.push-backups.mybackup.backupService}")
 
-    # Simulate data loss
-    server.succeed("test -f /spool/foo/hello.txt")
-    server.succeed("zfs destroy -r spool/foo")
-    server.fail("test -f /spool/foo/hello.txt")
+      # Simulate data loss
+      server.succeed("test -f /spool/foo/hello.txt")
+      server.succeed("zfs destroy -r spool/foo")
+      server.fail("test -f /spool/foo/hello.txt")
 
-    # Restore backup
-    vps.succeed("ezfs-prepare-restore-push-backup-mybackup")
-    server.succeed("ezfs-restore-push-backup-mybackup")
+      # Restore backup
+      vps.succeed("ezfs-prepare-restore-push-backup-mybackup")
+      server.succeed("ezfs-restore-push-backup-mybackup")
 
-    # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      # Setup and mount the dataset
+      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
 
-    # Assert that the data is restored
-    server.succeed("test -f /spool/foo/hello.txt")
-    server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
-  '';
+      # Assert that the data is restored
+      server.succeed("test -f /spool/foo/hello.txt")
+      server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
+    '';
 }
