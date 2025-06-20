@@ -1,14 +1,9 @@
-{
-  pkgs,
-  inputs,
-}:
+inputs:
 
-pkgs.testers.runNixOSTest {
+{
   name = "pull-states-reboot-all";
 
-  nodes = import ./nodes-pull-states.nix {
-    inputs = inputs;
-  };
+  nodes = import ./nodes-pull-states.nix inputs;
 
   testScript = ''
     def assert_server():

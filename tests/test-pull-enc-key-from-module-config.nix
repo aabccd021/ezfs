@@ -7,10 +7,7 @@
 # Specifically in this test, `environment.etc."encryption_key.txt".text` only exists on the server,
 # and if we don't implement it correctly, the desktop will fail to build.
 
-{
-  pkgs,
-  inputs,
-}:
+inputs:
 let
   mock-secrets = inputs.mock-secrets-nix.lib.secrets;
   sharedModule =
@@ -57,7 +54,7 @@ let
     };
 in
 
-pkgs.testers.runNixOSTest {
+{
   name = "enc-key-from-module-config";
 
   nodes.server = {

@@ -1,9 +1,4 @@
-{
-  pkgs,
-  inputs,
-}:
-
-pkgs.testers.runNixOSTest {
+inputs: {
   name = "empty";
 
   nodes.main = {

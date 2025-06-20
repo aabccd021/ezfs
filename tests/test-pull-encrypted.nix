@@ -1,7 +1,4 @@
-{
-  pkgs,
-  inputs,
-}:
+inputs:
 let
   mock-secrets = inputs.mock-secrets-nix.lib.secrets;
 
@@ -49,7 +46,7 @@ let
     };
 in
 
-pkgs.testers.runNixOSTest {
+{
   name = "encrypted";
 
   nodes.server = {

@@ -1,14 +1,9 @@
-{
-  pkgs,
-  inputs,
-}:
+inputs:
 
-pkgs.testers.runNixOSTest {
+{
   name = "reboot-all";
 
-  nodes = import ./nodes-pull-basic.nix {
-    inputs = inputs;
-  };
+  nodes = import ./nodes-pull-basic.nix inputs;
 
   testScript = ''
     server.start(allow_reboot=True)

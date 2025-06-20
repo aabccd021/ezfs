@@ -3,12 +3,7 @@
   inputs,
 }:
 let
-  mkTest =
-    nixFile:
-    import nixFile {
-      pkgs = pkgs;
-      inputs = inputs;
-    };
+  mkTest = nixFile: pkgs.testers.runNixOSTest (import nixFile inputs);
 in
 {
   test-empty = mkTest ./test-empty.nix;

@@ -1,13 +1,7 @@
-{
-  pkgs,
-  inputs,
-}:
-pkgs.testers.runNixOSTest {
+inputs: {
   name = "reboot-all-multi-dataset";
 
-  nodes = import ./nodes-pull-multi-dataset.nix {
-    inputs = inputs;
-  };
+  nodes = import ./nodes-pull-multi-dataset.nix inputs;
 
   testScript = ''
     server.start(allow_reboot=True)

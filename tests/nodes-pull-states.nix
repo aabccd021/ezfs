@@ -1,6 +1,4 @@
-{
-  inputs,
-}:
+inputs:
 let
   mock-secrets = inputs.mock-secrets-nix.lib.secrets;
   sharedModule =
