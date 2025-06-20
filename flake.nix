@@ -27,8 +27,6 @@
 
       nixosModules.default = import ./nixosModules/default.nix;
 
-      nixosModules.ezfs = nixosModules.default;
-
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
@@ -46,10 +44,10 @@
 
       tests = import ./tests {
         pkgs = pkgs;
-        mockSecrets = inputs.mock-secrets-nix.lib.secrets;
         inputs = {
           sops-nix = inputs.sops-nix;
           sops-nix-mock = inputs.sops-nix-mock;
+          mock-secrets-nix = inputs.mock-secrets-nix;
           ezfs.nixosModules = nixosModules;
         };
       };

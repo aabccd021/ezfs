@@ -1,8 +1,8 @@
 {
   inputs,
-  mockSecrets,
 }:
 let
+  mock-secrets = inputs.mock-secrets-nix.lib.secrets;
   sharedModule =
     { config, ... }:
     {
@@ -10,7 +10,7 @@ let
       ezfs = {
         hosts = {
           "9b037621" = {
-            publicKey = builtins.readFile mockSecrets.ed25519.bob.public;
+            publicKey = builtins.readFile mock-secrets.ed25519.bob.public;
             privateKey = {
               sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
               key = "sshd_private_key";
@@ -40,7 +40,7 @@ let
           sourceDatasetId = "myfoo";
           host = "server";
           user = "mybackupuser";
-          publicKey = builtins.readFile mockSecrets.ed25519.alice.public;
+          publicKey = builtins.readFile mock-secrets.ed25519.alice.public;
           privateKey = {
             key = "backup_ssh_key";
             sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
@@ -69,7 +69,7 @@ in
 
     sops-mock = {
       enable = true;
-      secrets.sshd_private_key.value = builtins.readFile mockSecrets.ed25519.bob.private;
+      secrets.sshd_private_key.value = builtins.readFile mock-secrets.ed25519.bob.private;
       secrets.sshd_private_key.key = "sshd_private_key";
     };
 
@@ -95,7 +95,7 @@ in
 
     sops-mock = {
       enable = true;
-      secrets.backup_private_key.value = builtins.readFile mockSecrets.ed25519.alice.private;
+      secrets.backup_private_key.value = builtins.readFile mock-secrets.ed25519.alice.private;
       secrets.backup_private_key.key = "backup_ssh_key";
     };
   };

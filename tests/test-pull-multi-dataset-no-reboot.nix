@@ -1,7 +1,6 @@
 {
   pkgs,
   inputs,
-  mockSecrets,
   ...
 }:
 
@@ -10,7 +9,6 @@ pkgs.testers.runNixOSTest {
 
   nodes = import ./nodes-pull-multi-dataset.nix {
     inputs = inputs;
-    mockSecrets = mockSecrets;
   };
 
   testScript = ''

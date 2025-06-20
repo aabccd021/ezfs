@@ -1,7 +1,6 @@
 {
   pkgs,
   inputs,
-  mockSecrets,
 }:
 let
   mkTest =
@@ -9,7 +8,6 @@ let
     import nixFile {
       pkgs = pkgs;
       inputs = inputs;
-      mockSecrets = mockSecrets;
     };
 in
 {
