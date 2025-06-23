@@ -872,7 +872,6 @@ in
               # no cons of using this,
               # don't forget to run `zfs allow -u <username> bookmark <pool>/<dataset>` on the remote host
               "--create-bookmark"
-              "--debug"
             ];
           };
         }
@@ -903,7 +902,6 @@ in
                 --no-privilege-elevation \
                 --sendoptions="w" \
                 --recvoptions="u" \
-                --debug \
                 ${pushTarget pushCfg} \
                 ${dsCfg.name}
               '';
