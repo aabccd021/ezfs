@@ -392,7 +392,8 @@ in
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
-            ] ++ requiredServices;
+            ]
+            ++ requiredServices;
             wants = [
               "sops-install-secrets.service"
               "zfs-import-${pool}.service"
