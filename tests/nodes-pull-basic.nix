@@ -43,6 +43,9 @@ let
   serverTestConfig =
     { config, ... }:
     {
+      imports = [
+        inputs.sops-nix-mock.nixosModules.default
+      ];
       systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
       sops-mock = {
         enable = true;
@@ -56,12 +59,14 @@ let
       virtualisation.emptyDiskImages = [ 4096 ];
       sops.validateSopsFiles = false;
       sops.age.keyFile = config.sops-mock.age.keyFile;
-      imports = [ inputs.sops-nix-mock.nixosModules.default ];
     };
 
   desktopTestConfig =
     { config, ... }:
     {
+      imports = [
+        inputs.sops-nix-mock.nixosModules.default
+      ];
       systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
       sops-mock = {
         enable = true;
@@ -71,7 +76,6 @@ let
       virtualisation.emptyDiskImages = [ 4096 ];
       sops.validateSopsFiles = false;
       sops.age.keyFile = config.sops-mock.age.keyFile;
-      imports = [ inputs.sops-nix-mock.nixosModules.default ];
     };
 
 in
