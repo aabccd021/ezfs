@@ -4,6 +4,7 @@ Easy ZFS configuration for NixOS
 
 # TODO
 
+- test encryption off
 - dataset `enable` set to false by default
 - hostId required for pulltarget and pushtarget
 - test dependson with alphabetical order
