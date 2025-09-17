@@ -8,7 +8,7 @@ let
       ezfs = {
         hosts = {
           "76219b03" = {
-            publicKey = builtins.readFile mock-secrets.ed25519.bob.public;
+            publicKey = mock-secrets.ed25519.bob.public;
             privateKey = {
               sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
               key = "sshd_private_key";
@@ -30,7 +30,7 @@ let
           hostId = "76219b03";
           host = "vps";
           user = "mybackupuser";
-          publicKey = builtins.readFile mock-secrets.ed25519.alice.public;
+          publicKey = mock-secrets.ed25519.alice.public;
           privateKey = {
             key = "backup_ssh_key";
             sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
@@ -71,7 +71,7 @@ in
       systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
       sops-mock = {
         enable = true;
-        secrets.backup_private_key.value = builtins.readFile mock-secrets.ed25519.alice.private;
+        secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
         secrets.backup_private_key.key = "backup_ssh_key";
       };
 
@@ -106,7 +106,7 @@ in
     systemd.services."zfs-import-vpool".serviceConfig.TimeoutStartSec = "1s";
     sops-mock = {
       enable = true;
-      secrets.sshd_private_key.value = builtins.readFile mock-secrets.ed25519.bob.private;
+      secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
       secrets.sshd_private_key.key = "sshd_private_key";
     };
   };
