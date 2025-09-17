@@ -1,7 +1,8 @@
 inputs:
 let
   mock-secrets = inputs.mock-secrets-nix.lib.secrets;
-  sharedModule =
+
+  ezfsConfig =
     { config, ... }:
     {
 
@@ -37,11 +38,42 @@ let
         };
       };
 
+    };
+
+  serverTestConfig =
+    { config, ... }:
+    {
+      systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+      sops-mock = {
+        enable = true;
+        secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
+        secrets.sshd_private_key.key = "sshd_private_key";
+      };
+      boot.initrd.postDeviceCommands = ''
+        echo "encryption key" > /run/encryption_key.txt
+        chmod 400 /run/encryption_key.txt
+      '';
       virtualisation.emptyDiskImages = [ 4096 ];
       sops.validateSopsFiles = false;
       sops.age.keyFile = config.sops-mock.age.keyFile;
       imports = [ inputs.sops-nix-mock.nixosModules.default ];
     };
+
+  desktopTestConfig =
+    { config, ... }:
+    {
+      systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
+      sops-mock = {
+        enable = true;
+        secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
+        secrets.backup_private_key.key = "backup_ssh_key";
+      };
+      virtualisation.emptyDiskImages = [ 4096 ];
+      sops.validateSopsFiles = false;
+      sops.age.keyFile = config.sops-mock.age.keyFile;
+      imports = [ inputs.sops-nix-mock.nixosModules.default ];
+    };
+
 in
 
 {
@@ -50,23 +82,12 @@ in
     imports = [
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
-      sharedModule
+      ezfsConfig
+
+      serverTestConfig # only required in test
     ];
 
     networking.hostId = "9b037621";
-
-    systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
-
-    sops-mock = {
-      enable = true;
-      secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
-      secrets.sshd_private_key.key = "sshd_private_key";
-    };
-
-    boot.initrd.postDeviceCommands = ''
-      echo "encryption key" > /run/encryption_key.txt
-      chmod 400 /run/encryption_key.txt
-    '';
 
   };
 
@@ -74,19 +95,13 @@ in
     imports = [
       inputs.sops-nix.nixosModules.default
       inputs.ezfs.nixosModules.default
-      sharedModule
+      ezfsConfig
+
+      desktopTestConfig # only required in test
     ];
 
     networking.hostId = "76219b03";
-
     ezfs.pull-backups.mybackup.enable = true;
 
-    systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
-
-    sops-mock = {
-      enable = true;
-      secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
-      secrets.backup_private_key.key = "backup_ssh_key";
-    };
   };
 }
