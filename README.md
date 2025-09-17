@@ -4,6 +4,8 @@ Easy ZFS configuration for NixOS
 
 # TODO
 
+- dataset `enable` set to false by default
+- hostId required for pulltarget and pushtarget
 - test dependson with alphabetical order
 - assert no failed service on test
 - assert `dependsOn` dataset actually exists
