@@ -233,11 +233,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1758510921,
-        "narHash": "sha256-P7iJnmyNs9t2CKv8GXioHh4J57CirEvj355+Odv8C9c=",
+        "lastModified": 1758512055,
+        "narHash": "sha256-yuWXQ6YvxcSaWLhpjjS7p/eUidTH8e9i+lVvdW9o/+I=",
         "owner": "aabccd021",
         "repo": "sops-nix-mock",
-        "rev": "78cd21f95052d101563e959243477223a4476b25",
+        "rev": "0b034da755e250080c432fbc526bc796e6add11e",
         "type": "github"
       },
       "original": {
