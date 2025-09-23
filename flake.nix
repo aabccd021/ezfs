@@ -44,6 +44,7 @@
       checks.x86_64-linux = tests // {
         formatting = treefmtEval.config.build.check self;
       };
+
       formatter.x86_64-linux = treefmtEval.config.build.wrapper;
 
       nixosModules = nixosModules;
