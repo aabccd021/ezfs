@@ -11,19 +11,6 @@
   outputs =
     { self, ... }@inputs:
     let
-      lib = inputs.nixpkgs.lib;
-
-      collectInputs =
-        is:
-        pkgs.linkFarm "inputs" (
-          builtins.mapAttrs (
-            name: i:
-            pkgs.linkFarm name {
-              self = i.outPath;
-              deps = collectInputs (lib.attrByPath [ "inputs" ] { } i);
-            }
-          ) is
-        );
 
       nixosModules.default = import ./nixosModules/default.nix;
 
@@ -40,8 +27,6 @@
         ];
       };
 
-      formatter = treefmtEval.config.build.wrapper;
-
       tests = import ./tests {
         pkgs = pkgs;
         inputs = {
@@ -52,34 +37,22 @@
         };
       };
 
-      devShells.default = pkgs.mkShellNoCC {
-        buildInputs = [
-          pkgs.nixd
-        ];
-      };
-
-      packages =
-        tests
-        // devShells
-        // {
-          formatting = treefmtEval.config.build.check self;
-          formatter = formatter;
-          allInputs = collectInputs inputs;
-        };
-
     in
 
     {
 
-      packages.x86_64-linux = packages // rec {
-        gcroot = pkgs.linkFarm "gcroot" packages;
-        default = gcroot;
+      checks.x86_64-linux = tests // {
+        formatting = treefmtEval.config.build.check self;
       };
+      formatter.x86_64-linux = treefmtEval.config.build.wrapper;
 
-      checks.x86_64-linux = packages;
-      formatter.x86_64-linux = formatter;
-      devShells.x86_64-linux = devShells;
       nixosModules = nixosModules;
+
+      devShells.x86_64-linux.default = pkgs.mkShellNoCC {
+        buildInputs = [
+          pkgs.nixd
+        ];
+      };
 
     };
 }
