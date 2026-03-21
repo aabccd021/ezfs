@@ -305,6 +305,33 @@ in
         ) hostIds;
     }
     {
+      assertions =
+        builtins.map
+          (
+            type:
+            let
+              typeHostKeys = builtins.filter (k: k.type == type) config.services.openssh.hostKeys;
+              paths = builtins.map (k: k.path) typeHostKeys;
+              uniquePaths = lib.lists.unique paths;
+              uniqueLength = builtins.length uniquePaths;
+              pathsStr = builtins.concatStringsSep ", " uniquePaths;
+            in
+            {
+              assertion = uniqueLength <= 1;
+              message = ''
+                Duplicate SSH host key with type ${type} is found: ${pathsStr}
+                SSH doesn't support multiple host keys of the same type
+              '';
+            }
+          )
+          [
+            "ed25519"
+            "rsa"
+            "ecdsa"
+            "dsa"
+          ];
+    }
+    {
       # canmount needs to be set to "noauto" to avoid being mounted automatically by NixOS,
       # which will ignore `ezfs.datasets.<dataset>.dependsOn`.
       assertions = mapDataset (
@@ -492,7 +519,7 @@ in
         }:
         let
           credentialName = pullSshKey pullId;
-          credentialPath = "/run/credentials/syncoid-pull-backup-${pullId}.service/${credentialName}";
+          credentialPath = "%d/${credentialName}";
         in
         {
           sanoid.enable = true;
@@ -829,7 +856,7 @@ in
         }:
         let
           credentialName = pushSshKey pushId;
-          credentialPath = "/run/credentials/syncoid-push-backup-${pushId}.service/${credentialName}";
+          credentialPath = "%d/${credentialName}";
         in
         {
           syncoid.enable = true;
