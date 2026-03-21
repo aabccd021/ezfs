@@ -7,6 +7,7 @@ let
 in
 {
   test-empty = mkTest ./test-empty.nix;
+  test-incremental = mkTest ./test-incremental.nix;
   test-pull-enc-key-from-module-config = mkTest ./test-pull-enc-key-from-module-config.nix;
   test-pull-idempotent = mkTest ./test-pull-idempotent.nix;
   test-pull-multi-dataset-no-reboot = mkTest ./test-pull-multi-dataset-no-reboot.nix;
