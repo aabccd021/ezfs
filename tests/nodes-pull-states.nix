@@ -9,10 +9,7 @@ let
         hosts = {
           "9b037621" = {
             publicKey = mock-secrets.ed25519.bob.public;
-            privateKey = {
-              sopsFile = config.sops-mock.secrets.sshd_private_key.sopsFile;
-              key = "sshd_private_key";
-            };
+            privateKey.file = config.age-mock.secrets.sshd_private_key.file;
           };
         };
         datasets.myfoo = {
@@ -36,17 +33,13 @@ let
           host = "server";
           user = "mybackupuser";
           publicKey = mock-secrets.ed25519.alice.public;
-          privateKey = {
-            key = "backup_ssh_key";
-            sopsFile = config.sops-mock.secrets.backup_private_key.sopsFile;
-          };
+          privateKey.file = config.age-mock.secrets.backup_private_key.file;
         };
       };
 
       virtualisation.emptyDiskImages = [ 4096 ];
-      sops.validateSopsFiles = false;
-      sops.age.keyFile = config.sops-mock.age.keyFile;
-      imports = [ inputs.sops-nix-mock.nixosModules.default ];
+      age.identityPaths = [ config.age-mock.identityPath ];
+      imports = [ inputs.age-mock-nix.nixosModules.default ];
     };
 in
 
@@ -54,7 +47,7 @@ in
 
   server = {
     imports = [
-      inputs.sops-nix.nixosModules.default
+      inputs.agenix.nixosModules.default
       inputs.ezfs.nixosModules.default
       sharedModule
     ];
@@ -66,10 +59,9 @@ in
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
 
-    sops-mock = {
+    age-mock = {
       enable = true;
       secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
-      secrets.sshd_private_key.key = "sshd_private_key";
     };
 
     boot.initrd.postDeviceCommands = ''
@@ -81,7 +73,7 @@ in
 
   desktop = {
     imports = [
-      inputs.sops-nix.nixosModules.default
+      inputs.agenix.nixosModules.default
       inputs.ezfs.nixosModules.default
       sharedModule
     ];
@@ -92,10 +84,9 @@ in
 
     systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
 
-    sops-mock = {
+    age-mock = {
       enable = true;
       secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
-      secrets.backup_private_key.key = "backup_ssh_key";
     };
   };
 }

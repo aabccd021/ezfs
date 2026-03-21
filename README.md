@@ -5,7 +5,7 @@ Easy ZFS configuration for NixOS
 # TODO
 
 - disallow encryption off
-- force use sops for encryption key
+- force use agenix for encryption key
 - dataset `enable` set to false by default
 - hostId required for pulltarget and pushtarget
 - test dependson with alphabetical order

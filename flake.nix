@@ -4,8 +4,7 @@
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   inputs.treefmt-nix.url = "github:numtide/treefmt-nix";
-  inputs.sops-nix.url = "github:Mic92/sops-nix";
-  inputs.sops-nix-mock.url = "github:aabccd021/sops-nix-mock";
+  inputs.agenix.url = "github:ryantm/agenix";
   inputs.mock-secrets-nix.url = "github:aabccd021/mock-secrets-nix";
 
   outputs =
@@ -30,8 +29,8 @@
       tests = import ./tests {
         pkgs = pkgs;
         inputs = {
-          sops-nix = inputs.sops-nix;
-          sops-nix-mock = inputs.sops-nix-mock;
+          agenix = inputs.agenix;
+          age-mock-nix.nixosModules.default = import ./age-mock-nix;
           mock-secrets-nix = inputs.mock-secrets-nix;
           ezfs.nixosModules = nixosModules;
         };

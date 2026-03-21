@@ -120,11 +120,8 @@ in
             privateKey = lib.mkOption {
               type = lib.types.submodule {
                 options = {
-                  sopsFile = lib.mkOption {
+                  file = lib.mkOption {
                     type = lib.types.path;
-                  };
-                  key = lib.mkOption {
-                    type = lib.types.str;
                   };
                 };
               };
@@ -209,11 +206,8 @@ in
               privateKey = lib.mkOption {
                 type = lib.types.submodule {
                   options = {
-                    sopsFile = lib.mkOption {
+                    file = lib.mkOption {
                       type = lib.types.path;
-                    };
-                    key = lib.mkOption {
-                      type = lib.types.str;
                     };
                   };
                 };
@@ -265,11 +259,8 @@ in
               privateKey = lib.mkOption {
                 type = lib.types.submodule {
                   options = {
-                    sopsFile = lib.mkOption {
+                    file = lib.mkOption {
                       type = lib.types.path;
-                    };
-                    key = lib.mkOption {
-                      type = lib.types.str;
                     };
                   };
                 };
@@ -387,7 +378,7 @@ in
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
             after = [
-              "sops-install-secrets.service"
+              "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
@@ -395,7 +386,7 @@ in
             ]
             ++ requiredServices;
             wants = [
-              "sops-install-secrets.service"
+              "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
@@ -476,7 +467,7 @@ in
         }
       );
 
-      sops = mapPullTarget (
+      age = mapPullTarget (
         { pullId, pullCfg, ... }:
         {
           secrets.${pullSshKey pullId} = pullCfg.privateKey;
@@ -493,19 +484,19 @@ in
           services."syncoid-pull-backup-${pullId}" = {
             wants = [
               "zfs-import-${pool}.service"
-              "sops-install-secrets.service"
+              "agenix.service"
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
             ];
             after = [
               "zfs-import-${pool}.service"
-              "sops-install-secrets.service"
+              "agenix.service"
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
             ];
-            serviceConfig.LoadCredential = "${credentialName}:${config.sops.secrets.${credentialName}.path}";
+            serviceConfig.LoadCredential = "${credentialName}:${config.age.secrets.${credentialName}.path}";
           };
         }
       );
@@ -575,7 +566,7 @@ in
                 ${
                   lib.optionalString (pullCfg.restoreExtraArgs != [ ]) (lib.escapeShellArg pullCfg.restoreExtraArgs)
                 } \
-                --sshkey ${config.sops.secrets.${pullSshKey pullId}.path} \
+                --sshkey ${config.age.secrets.${pullSshKey pullId}.path} \
                 --sshoption='StrictHostKeyChecking=yes' \
                 --sshoption='UserKnownHostsFile=${pullKnownHost pullCfg}' \
                 --no-sync-snap \
@@ -649,14 +640,14 @@ in
             hostKeys = [
               {
                 type = "ed25519";
-                path = config.sops.secrets."ezfs_sshd_key".path;
+                path = config.age.secrets."ezfs_sshd_key".path;
               }
             ];
           };
         }
       );
 
-      sops = mapPullSource (
+      age = mapPullSource (
         { ... }:
         let
           hostId = config.networking.hostId;
@@ -728,14 +719,14 @@ in
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
             after = [
-              "sops-install-secrets.service"
+              "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
             ];
             wants = [
-              "sops-install-secrets.service"
+              "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
@@ -797,14 +788,14 @@ in
             hostKeys = [
               {
                 type = "ed25519";
-                path = config.sops.secrets."ezfs_sshd_key".path;
+                path = config.age.secrets."ezfs_sshd_key".path;
               }
             ];
           };
         }
       );
 
-      sops = mapPushTarget (
+      age = mapPushTarget (
         { ... }:
         let
           hostId = config.networking.hostId;
@@ -828,7 +819,7 @@ in
       );
     }
     {
-      sops = mapPushSource (
+      age = mapPushSource (
         { pushId, pushCfg, ... }:
         {
           secrets.${pushSshKey pushId} = pushCfg.privateKey;
@@ -842,7 +833,7 @@ in
         in
         {
           services."syncoid-push-backup-${pushId}" = {
-            serviceConfig.LoadCredential = "${credentialName}:${config.sops.secrets.${credentialName}.path}";
+            serviceConfig.LoadCredential = "${credentialName}:${config.age.secrets.${credentialName}.path}";
           };
         }
       );
@@ -899,7 +890,7 @@ in
                 ${
                   lib.optionalString (pushCfg.restoreExtraArgs != [ ]) (lib.escapeShellArg pushCfg.restoreExtraArgs)
                 } \
-                --sshkey ${config.sops.secrets.${pushSshKey pushId}.path} \
+                --sshkey ${config.age.secrets.${pushSshKey pushId}.path} \
                 --sshoption='StrictHostKeyChecking=yes' \
                 --sshoption='UserKnownHostsFile=${pushKnownHost pushCfg}' \
                 --no-sync-snap \

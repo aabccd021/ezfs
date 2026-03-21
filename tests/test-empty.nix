@@ -3,7 +3,7 @@ inputs: {
 
   nodes.main = {
     imports = [
-      inputs.sops-nix.nixosModules.default
+      inputs.agenix.nixosModules.default
       inputs.ezfs.nixosModules.default
     ];
   };
