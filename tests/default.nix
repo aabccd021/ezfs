@@ -17,4 +17,5 @@ in
   test-pull-encrypted = mkTest ./test-pull-encrypted.nix;
   test-push-encrypted = mkTest ./test-push-encrypted.nix;
   test-push-idempotent = mkTest ./test-push-idempotent.nix;
+  test-push-states = mkTest ./test-push-states.nix;
 }
