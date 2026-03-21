@@ -305,33 +305,6 @@ in
         ) hostIds;
     }
     {
-      assertions =
-        builtins.map
-          (
-            type:
-            let
-              typeHostKeys = builtins.filter (k: k.type == type) config.services.openssh.hostKeys;
-              paths = builtins.map (k: k.path) typeHostKeys;
-              uniquePaths = lib.lists.unique paths;
-              uniqueLength = builtins.length uniquePaths;
-              pathsStr = builtins.concatStringsSep ", " uniquePaths;
-            in
-            {
-              assertion = uniqueLength <= 1;
-              message = ''
-                Duplicate SSH host key with type ${type} is found: ${pathsStr}
-                SSH doesn't support multiple host keys of the same type
-              '';
-            }
-          )
-          [
-            "ed25519"
-            "rsa"
-            "ecdsa"
-            "dsa"
-          ];
-    }
-    {
       # canmount needs to be set to "noauto" to avoid being mounted automatically by NixOS,
       # which will ignore `ezfs.datasets.<dataset>.dependsOn`.
       assertions = mapDataset (
@@ -479,10 +452,7 @@ in
       sops = mapPullTarget (
         { pullId, pullCfg, ... }:
         {
-          secrets.${pullSshKey pullId} = pullCfg.privateKey // {
-            owner = config.services.syncoid.user;
-            group = config.services.syncoid.group;
-          };
+          secrets.${pullSshKey pullId} = pullCfg.privateKey;
         }
       );
 
@@ -490,6 +460,7 @@ in
         { pullId, pullCfg, ... }:
         let
           pool = dsToPool pullCfg.targetDatasetName;
+          credentialName = pullSshKey pullId;
         in
         {
           services."syncoid-pull-backup-${pullId}" = {
@@ -507,6 +478,7 @@ in
               "zfs-import.target"
               "zfs-mount.service"
             ];
+            serviceConfig.LoadCredential = "${credentialName}:${config.sops.secrets.${credentialName}.path}";
           };
         }
       );
@@ -518,6 +490,10 @@ in
           dsCfg,
           ...
         }:
+        let
+          credentialName = pullSshKey pullId;
+          credentialPath = "/run/credentials/syncoid-pull-backup-${pullId}.service/${credentialName}";
+        in
         {
           sanoid.enable = true;
           sanoid.datasets.${pullCfg.targetDatasetName} = {
@@ -526,7 +502,7 @@ in
           };
           syncoid.enable = true;
           syncoid.commands."pull-backup-${pullId}" = {
-            sshKey = config.sops.secrets.${pullSshKey pullId}.path;
+            sshKey = credentialPath;
             source = pullSource dsCfg pullCfg;
             target = pullCfg.targetDatasetName;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
@@ -635,10 +611,6 @@ in
     {
       services = mapPullSource (
         { ... }:
-        let
-          hostId = config.networking.hostId;
-          publicKey = config.ezfs.hosts.${hostId}.publicKey;
-        in
         {
           openssh = {
             enable = true;
@@ -649,7 +621,7 @@ in
             };
             hostKeys = [
               {
-                type = lib.elemAt (lib.splitString " " publicKey) 0;
+                type = "ed25519";
                 path = config.sops.secrets."ezfs_sshd_key".path;
               }
             ];
@@ -664,10 +636,7 @@ in
           privateKey = config.ezfs.hosts.${hostId}.privateKey;
         in
         {
-          secrets."ezfs_sshd_key" = privateKey // {
-            owner = "root";
-            group = "root";
-          };
+          secrets."ezfs_sshd_key" = privateKey;
         }
       );
 
@@ -761,7 +730,6 @@ in
               fi
             '';
           };
-
         }
       );
 
@@ -786,10 +754,6 @@ in
 
       services = mapPushTarget (
         { pushCfg, ... }:
-        let
-          hostId = config.networking.hostId;
-          publicKey = config.ezfs.hosts.${hostId}.publicKey;
-        in
         {
           sanoid.enable = true;
           sanoid.datasets.${pushCfg.targetDatasetName} = {
@@ -805,7 +769,7 @@ in
             };
             hostKeys = [
               {
-                type = lib.elemAt (lib.splitString " " publicKey) 0;
+                type = "ed25519";
                 path = config.sops.secrets."ezfs_sshd_key".path;
               }
             ];
@@ -820,10 +784,7 @@ in
           privateKey = config.ezfs.hosts.${hostId}.privateKey;
         in
         {
-          secrets."ezfs_sshd_key" = privateKey // {
-            owner = "root";
-            group = "root";
-          };
+          secrets."ezfs_sshd_key" = privateKey;
         }
       );
 
@@ -843,9 +804,18 @@ in
       sops = mapPushSource (
         { pushId, pushCfg, ... }:
         {
-          secrets.${pushSshKey pushId} = pushCfg.privateKey // {
-            owner = config.services.syncoid.user;
-            group = config.services.syncoid.group;
+          secrets.${pushSshKey pushId} = pushCfg.privateKey;
+        }
+      );
+
+      systemd = mapPushSource (
+        { pushId, ... }:
+        let
+          credentialName = pushSshKey pushId;
+        in
+        {
+          services."syncoid-push-backup-${pushId}" = {
+            serviceConfig.LoadCredential = "${credentialName}:${config.sops.secrets.${credentialName}.path}";
           };
         }
       );
@@ -857,10 +827,14 @@ in
           pushCfg,
           ...
         }:
+        let
+          credentialName = pushSshKey pushId;
+          credentialPath = "/run/credentials/syncoid-push-backup-${pushId}.service/${credentialName}";
+        in
         {
           syncoid.enable = true;
           syncoid.commands."push-backup-${pushId}" = {
-            sshKey = config.sops.secrets.${pushSshKey pushId}.path;
+            sshKey = credentialPath;
             source = dsCfg.name;
             target = pushTarget pushCfg;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
