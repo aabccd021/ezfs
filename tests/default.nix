@@ -22,4 +22,5 @@ in
   test-push-reboot-all = mkTest ./test-push-reboot-all.nix;
   test-push-states = mkTest ./test-push-states.nix;
   test-nested-dataset-order = mkTest ./test-nested-dataset-order.nix;
+  test-encrypted-parent-unencrypted-child = mkTest ./test-encrypted-parent-unencrypted-child.nix;
 }

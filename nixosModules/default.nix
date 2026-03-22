@@ -369,9 +369,9 @@ in
 
               pool=$(echo "$DATASET" | cut -d'/' -f1)
 
-              # Mount all datasets first (handles ordering by mountpoint depth)
-              # This ensures parent mountpoints exist before children
-              zfs mount -a || true
+              # Mount all available datasets (handles ordering by mountpoint depth)
+              # Encrypted datasets without keys are skipped, not failed
+              zfs mount -a
 
               for user in $BACKUP_USERS; do
                 zfs unallow -u "$user" "$pool"
