@@ -377,9 +377,6 @@ in
 
               pool=$(echo "$DATASET" | cut -d'/' -f1)
 
-              # LOGIC2: Mount all available datasets in mountpoint depth order
-              zfs mount -a
-
               for user in $BACKUP_USERS; do
                 zfs unallow -u "$user" "$pool"
               done
@@ -395,10 +392,8 @@ in
                 fi
               fi
 
-              mounted=$(zfs get -H -o value mounted "$DATASET")
-              if [ "$mounted" != "yes" ]; then
-                zfs mount "$DATASET"
-              fi
+              # LOGIC2: Mount all available datasets in mountpoint depth order
+              zfs mount -a
 
               mountpoint=$(zfs get -H -o value mountpoint "$DATASET")
               if [ -d "$mountpoint" ]; then
