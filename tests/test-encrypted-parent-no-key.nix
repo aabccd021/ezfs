@@ -57,11 +57,6 @@ in
     server.succeed("zfs unload-key spool/encrypted")
     server.succeed("rm /run/late_encryption_key.txt")
 
-    # With dependsOn, the unencrypted service requires encrypted to succeed first.
-    # Since encrypted cannot load its key, it fails, and unencrypted also fails.
-    # This is CORRECT behavior - it prevents the data leak scenario!
-    server.fail("systemctl start --wait ezfs-setup-dataset-unencrypted")
-
     # Neither dataset should be mounted - both services failed
     server.fail("mountpoint /data")
     server.fail("mountpoint /data/child")

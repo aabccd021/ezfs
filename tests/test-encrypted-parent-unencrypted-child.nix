@@ -33,7 +33,6 @@ in
       name = "spool/unencrypted";
       hostId = "9b037621";
       options.mountpoint = "/data/child";
-      dependsOn = [ "encrypted" ];
     };
 
     boot.initrd.postDeviceCommands = ''

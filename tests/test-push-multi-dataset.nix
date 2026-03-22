@@ -28,7 +28,6 @@ let
             keylocation = "file:///run/encryption_key.txt";
             mountpoint = "/shallow/foo";
           };
-          dependsOn = [ "myshallow" ];
         };
         push-backups.mybackup = {
           targetDatasetName = "vpool/foo_backup";

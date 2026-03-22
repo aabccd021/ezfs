@@ -26,7 +26,6 @@ in
       name = "spool/parent/child";
       hostId = "9b037621";
       options.mountpoint = "/data/child";
-      dependsOn = [ "parent" ];
     };
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";

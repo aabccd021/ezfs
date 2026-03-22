@@ -156,7 +156,6 @@ in
             dependsOn = lib.mkOption {
               type = lib.types.listOf lib.types.str;
               default = [ ];
-              description = "List of other dataset IDs that must be mounted before this one.";
             };
           };
         }
@@ -337,7 +336,8 @@ in
 
           pool = dsToPool dsCfg.name;
 
-          requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
+          # LOGIC1: dependsOn - explicit systemd service dependencies
+          # requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
 
         in
         {
@@ -345,14 +345,14 @@ in
             description = "Mount ZFS dataset ${dsId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
-            requires = requiredServices;
+            # LOGIC1: requires = requiredServices;
             after = [
               "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
-            ] ++ requiredServices;
+            ]; # LOGIC1: ++ requiredServices;
             wants = [
               "agenix.service"
               "zfs-import-${pool}.service"
@@ -376,6 +376,9 @@ in
               }
 
               pool=$(echo "$DATASET" | cut -d'/' -f1)
+
+              # LOGIC2: Mount all available datasets in mountpoint depth order
+              zfs mount -a
 
               for user in $BACKUP_USERS; do
                 zfs unallow -u "$user" "$pool"
