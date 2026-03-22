@@ -24,4 +24,5 @@ in
   test-nested-dataset-order = mkTest ./test-nested-dataset-order.nix;
   test-encrypted-parent-unencrypted-child = mkTest ./test-encrypted-parent-unencrypted-child.nix;
   test-encrypted-parent-no-key = mkTest ./test-encrypted-parent-no-key.nix;
+  test-encrypted-parent-with-key = mkTest ./test-encrypted-parent-with-key.nix;
 }

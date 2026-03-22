@@ -29,6 +29,12 @@ in
     };
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+
+    # Force parent to run only after child succeeds
+    systemd.services."ezfs-setup-dataset-parent" = {
+      after = [ "ezfs-setup-dataset-child.service" ];
+      requires = [ "ezfs-setup-dataset-child.service" ];
+    };
   };
 
   testScript = ''
@@ -40,20 +46,29 @@ in
     server.succeed("ezfs-create-parent")
     server.succeed("ezfs-create-child")
 
-    # Start only child service - parent should be mounted first via dependsOn
+    # Mount both datasets
     server.succeed("systemctl start --wait ezfs-setup-dataset-child")
 
-    # Verify both datasets are mounted
-    server.succeed("mountpoint /data")
-    server.succeed("mountpoint /data/child")
-
-    # Write test files
-    server.succeed("echo 'parent' > /data/test.txt")
+    # Write to child layer
     server.succeed("echo 'child' > /data/child/test.txt")
 
-    # Verify files are on correct datasets
+    # Unmount child, write to parent layer
     server.succeed("zfs unmount spool/parent/child")
-    server.succeed("test -f /data/test.txt")
-    server.fail("test -f /data/child/test.txt")
+    server.succeed("echo 'parent' > /data/child/test.txt")
+
+    # Unmount parent, write to rootfs layer
+    server.succeed("zfs unmount spool/parent")
+    server.succeed("mkdir -p /data/child")
+    server.succeed("echo 'rootfs' > /data/child/test.txt")
+
+    # Remount via service
+    server.succeed("systemctl start --wait ezfs-setup-dataset-child")
+
+    # Assert layers are correct
+    server.succeed("cat /data/child/test.txt | grep '^child$'")
+    server.succeed("zfs unmount spool/parent/child")
+    server.succeed("cat /data/child/test.txt | grep '^parent$'")
+    server.succeed("zfs unmount spool/parent")
+    server.succeed("cat /data/child/test.txt | grep '^rootfs$'")
   '';
 }

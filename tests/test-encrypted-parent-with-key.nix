@@ -3,7 +3,7 @@ let
   mock-secrets = inputs.mock-secrets-nix.lib.secrets;
 in
 {
-  name = "encrypted-parent-unencrypted-child";
+  name = "encrypted-parent-with-key";
 
   nodes.server = {
     imports = [
@@ -16,7 +16,7 @@ in
     virtualisation.emptyDiskImages = [ 4096 ];
     age.identityPaths = [ ];
 
-    # Encrypted dataset at /data (ZFS sibling, not parent)
+    # Encrypted dataset at /data - key IS available
     ezfs.datasets.encrypted = {
       name = "spool/encrypted";
       hostId = "9b037621";
@@ -28,17 +28,12 @@ in
       };
     };
 
-    # Non-encrypted dataset at /data/child (ZFS sibling with nested mountpoint)
+    # Non-encrypted dataset at /data/child
     ezfs.datasets.unencrypted = {
       name = "spool/unencrypted";
       hostId = "9b037621";
       options.mountpoint = "/data/child";
     };
-
-    boot.initrd.postDeviceCommands = ''
-      echo "encryption key" > /run/encryption_key.txt
-      chmod 400 /run/encryption_key.txt
-    '';
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
 
@@ -55,6 +50,10 @@ in
 
     # Create pool and datasets
     server.succeed("zpool create spool /dev/vdb")
+
+    # Create key file - key remains available
+    server.succeed("echo 'encryption key' > /run/encryption_key.txt")
+    server.succeed("chmod 400 /run/encryption_key.txt")
     server.succeed("ezfs-create-encrypted")
     server.succeed("ezfs-create-unencrypted")
 
