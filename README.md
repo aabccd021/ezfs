@@ -8,9 +8,7 @@ Easy ZFS configuration for NixOS
 - force use agenix for encryption key
 - dataset `enable` set to false by default
 - hostId required for pulltarget and pushtarget
-- test dependson with alphabetical order
 - assert no failed service on test
-- assert `dependsOn` dataset actually exists
 - server --pull-> homeserver --pull-> desktop
 - server --pull-> desktop --push-> vps
 - more push test

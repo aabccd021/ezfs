@@ -143,10 +143,6 @@ in
             options = lib.mkOption {
               type = lib.types.attrsOf lib.types.str;
             };
-            dependsOn = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ ];
-            };
             user = lib.mkOption {
               type = lib.types.str;
               default = "root";
@@ -305,17 +301,6 @@ in
           ];
     }
     {
-      # canmount needs to be set to "noauto" to avoid being mounted automatically by NixOS,
-      # which will ignore `ezfs.datasets.<dataset>.dependsOn`.
-      assertions = mapDataset (
-        { dsCfg, ... }:
-        [
-          {
-            assertion = !(builtins.hasAttr "canmount" dsCfg.options);
-            message = "Option 'canmount' can not be configured";
-          }
-        ]
-      );
       systemd = mapDataset (
         { dsId, dsCfg, ... }:
         let
@@ -329,10 +314,6 @@ in
             "pbkdf2salt"
             "keyformat"
           ];
-
-          finalUpdateOptions = updateOptions // {
-            canmount = "noauto";
-          };
 
           pullBackups = (
             lib.filterAttrs (pullId: pullCfg: pullCfg.sourceDatasetId == dsId) config.ezfs.pull-backups
@@ -351,8 +332,6 @@ in
 
           pool = dsToPool dsCfg.name;
 
-          requiredServices = (builtins.map (n: "ezfs-setup-dataset-${n}.service") dsCfg.dependsOn);
-
         in
         {
           services."ezfs-setup-dataset-${dsId}" = {
@@ -365,8 +344,7 @@ in
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
-            ]
-            ++ requiredServices;
+            ];
             wants = [
               "agenix.service"
               "zfs-import-${pool}.service"
@@ -374,7 +352,6 @@ in
               "zfs-import.target"
               "zfs-mount.service"
             ];
-            requires = requiredServices;
             wantedBy = [ "multi-user.target" ];
             path = [ "/run/booted-system/sw/" ];
             enableStrictShellChecks = true;
@@ -391,15 +368,20 @@ in
               }
 
               pool=$(echo "$DATASET" | cut -d'/' -f1)
+
+              # Mount all datasets first (handles ordering by mountpoint depth)
+              # This ensures parent mountpoints exist before children
+              zfs mount -a || true
+
               for user in $BACKUP_USERS; do
                 zfs unallow -u "$user" "$pool"
               done
 
-              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") finalUpdateOptions)}
+              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") updateOptions)}
 
               encryption=$(zfs get -H -o value encryption "$DATASET")
               if [ "$encryption" != "off" ]; then
-                
+
                 keystatus=$(zfs get -H -o value keystatus "$DATASET")
                 if [ "$keystatus" != "available" ]; then
                   zfs load-key "$DATASET"
@@ -587,11 +569,6 @@ in
 
       environment = mapDataset (
         { dsId, dsCfg, ... }:
-        let
-          finalOptions = dsCfg.options // {
-            canmount = "noauto";
-          };
-        in
         {
           systemPackages = [
             (pkgs.writeShellApplication {
@@ -599,7 +576,7 @@ in
               runtimeInputs = [ "/run/booted-system/sw" ];
               text = ''
                 zfs create -u ${
-                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") finalOptions)
+                  lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") dsCfg.options)
                 } ${dsCfg.name}
               '';
             })

@@ -44,6 +44,10 @@
         formatting = treefmtEval.config.build.check self;
       };
 
+      packages.x86_64-linux.test-all = pkgs.linkFarm "ezfs-tests" (
+        builtins.map (name: { inherit name; path = tests.${name}; }) (builtins.attrNames tests)
+      );
+
       formatter.x86_64-linux = treefmtEval.config.build.wrapper;
 
       nixosModules = nixosModules;

@@ -20,7 +20,6 @@ let
           };
         };
         datasets.myfoo = {
-          dependsOn = [ "myshallow" ];
           name = "spool/foo";
           hostId = "9b037621";
           options = {

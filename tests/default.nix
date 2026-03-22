@@ -21,4 +21,5 @@ in
   test-push-multi-dataset = mkTest ./test-push-multi-dataset.nix;
   test-push-reboot-all = mkTest ./test-push-reboot-all.nix;
   test-push-states = mkTest ./test-push-states.nix;
+  test-nested-dataset-order = mkTest ./test-nested-dataset-order.nix;
 }
