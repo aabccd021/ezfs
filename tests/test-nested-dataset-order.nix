@@ -26,43 +26,35 @@ in
       name = "spool/parent/child";
       hostId = "9b037621";
       options.mountpoint = "/data/child";
+      dependsOn = [ "parent" ];
     };
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
   };
 
   testScript = ''
-    for i in range(5):
-      print(f"=== Run {i+1}/5 ===")
+    start_all()
+    server.wait_for_unit("multi-user.target")
 
-      server.start()
-      server.wait_for_unit("multi-user.target")
+    # Create pool and datasets
+    server.succeed("zpool create spool /dev/vdb")
+    server.succeed("ezfs-create-parent")
+    server.succeed("ezfs-create-child")
 
-      # Create pool and datasets
-      server.succeed("zpool create spool /dev/vdb")
-      server.succeed("ezfs-create-parent")
-      server.succeed("ezfs-create-child")
+    # Start only child service - parent should be mounted first via dependsOn
+    server.succeed("systemctl start --wait ezfs-setup-dataset-child")
 
-      # Start only child service - parent should be mounted automatically via zfs mount -a
-      server.succeed("systemctl start --wait ezfs-setup-dataset-child")
+    # Verify both datasets are mounted
+    server.succeed("mountpoint /data")
+    server.succeed("mountpoint /data/child")
 
-      # Verify both datasets are mounted
-      server.succeed("mountpoint /data")
-      server.succeed("mountpoint /data/child")
+    # Write test files
+    server.succeed("echo 'parent' > /data/test.txt")
+    server.succeed("echo 'child' > /data/child/test.txt")
 
-      # Write test files
-      server.succeed("echo 'parent' > /data/test.txt")
-      server.succeed("echo 'child' > /data/child/test.txt")
-
-      # Verify files are on correct datasets
-      server.succeed("zfs unmount spool/parent/child")
-      server.succeed("test -f /data/test.txt")
-      server.fail("test -f /data/child/test.txt")
-
-      # Cleanup for next iteration
-      server.succeed("zpool destroy spool")
-      server.shutdown()
-
-    print("All 5 runs passed - no flakiness detected")
+    # Verify files are on correct datasets
+    server.succeed("zfs unmount spool/parent/child")
+    server.succeed("test -f /data/test.txt")
+    server.fail("test -f /data/child/test.txt")
   '';
 }

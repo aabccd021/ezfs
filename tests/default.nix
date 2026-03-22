@@ -23,4 +23,5 @@ in
   test-push-states = mkTest ./test-push-states.nix;
   test-nested-dataset-order = mkTest ./test-nested-dataset-order.nix;
   test-encrypted-parent-unencrypted-child = mkTest ./test-encrypted-parent-unencrypted-child.nix;
+  test-encrypted-parent-no-key = mkTest ./test-encrypted-parent-no-key.nix;
 }

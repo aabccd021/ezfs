@@ -28,6 +28,7 @@ let
             keylocation = "file:///run/encryption_key.txt";
             mountpoint = "/shallow/foo";
           };
+          dependsOn = [ "myshallow" ];
         };
         pull-backups.mybackup = {
           targetDatasetName = "dpool/foo_backup";

@@ -153,6 +153,11 @@ in
               default = "root";
               description = "The group to own the mounted dataset.";
             };
+            dependsOn = lib.mkOption {
+              type = lib.types.listOf lib.types.str;
+              default = [ ];
+              description = "List of other dataset IDs that must be mounted before this one.";
+            };
           };
         }
       );
@@ -332,19 +337,22 @@ in
 
           pool = dsToPool dsCfg.name;
 
+          requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
+
         in
         {
           services."ezfs-setup-dataset-${dsId}" = {
             description = "Mount ZFS dataset ${dsId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
+            requires = requiredServices;
             after = [
               "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
-            ];
+            ] ++ requiredServices;
             wants = [
               "agenix.service"
               "zfs-import-${pool}.service"
@@ -368,10 +376,6 @@ in
               }
 
               pool=$(echo "$DATASET" | cut -d'/' -f1)
-
-              # Mount all available datasets (handles ordering by mountpoint depth)
-              # Encrypted datasets without keys are skipped, not failed
-              zfs mount -a
 
               for user in $BACKUP_USERS; do
                 zfs unallow -u "$user" "$pool"
