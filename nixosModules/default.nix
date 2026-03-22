@@ -118,13 +118,7 @@ in
               type = lib.types.str;
             };
             privateKey = lib.mkOption {
-              type = lib.types.submodule {
-                options = {
-                  file = lib.mkOption {
-                    type = lib.types.path;
-                  };
-                };
-              };
+              type = lib.types.path;
             };
           };
         }
@@ -204,13 +198,7 @@ in
                 type = lib.types.str;
               };
               privateKey = lib.mkOption {
-                type = lib.types.submodule {
-                  options = {
-                    file = lib.mkOption {
-                      type = lib.types.path;
-                    };
-                  };
-                };
+                type = lib.types.path;
               };
             };
           }
@@ -257,13 +245,7 @@ in
                 type = lib.types.str;
               };
               privateKey = lib.mkOption {
-                type = lib.types.submodule {
-                  options = {
-                    file = lib.mkOption {
-                      type = lib.types.path;
-                    };
-                  };
-                };
+                type = lib.types.path;
               };
             };
           }
@@ -470,7 +452,7 @@ in
       age = mapPullTarget (
         { pullId, pullCfg, ... }:
         {
-          secrets.${pullSshKey pullId} = pullCfg.privateKey;
+          secrets.${pullSshKey pullId}.file = pullCfg.privateKey;
         }
       );
 
@@ -654,7 +636,7 @@ in
           privateKey = config.ezfs.hosts.${hostId}.privateKey;
         in
         {
-          secrets."ezfs_sshd_key" = privateKey;
+          secrets."ezfs_sshd_key".file = privateKey;
         }
       );
 
@@ -802,7 +784,7 @@ in
           privateKey = config.ezfs.hosts.${hostId}.privateKey;
         in
         {
-          secrets."ezfs_sshd_key" = privateKey;
+          secrets."ezfs_sshd_key".file = privateKey;
         }
       );
 
@@ -822,7 +804,7 @@ in
       age = mapPushSource (
         { pushId, pushCfg, ... }:
         {
-          secrets.${pushSshKey pushId} = pushCfg.privateKey;
+          secrets.${pushSshKey pushId}.file = pushCfg.privateKey;
         }
       );
 

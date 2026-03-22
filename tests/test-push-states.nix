@@ -9,7 +9,7 @@ let
         hosts = {
           "76219b03" = {
             publicKey = mock-secrets.ed25519.bob.public;
-            privateKey.file = config.age-mock.secrets.sshd_private_key.file;
+            privateKey = config.age-mock.secrets.sshd_private_key.file;
           };
         };
         datasets.myfoo = {
@@ -34,7 +34,7 @@ let
           host = "vps";
           user = "mybackupuser";
           publicKey = mock-secrets.ed25519.alice.public;
-          privateKey.file = config.age-mock.secrets.backup_private_key.file;
+          privateKey = config.age-mock.secrets.backup_private_key.file;
         };
       };
 
