@@ -308,43 +308,17 @@ in
       systemd = mapDataset (
         { dsId, dsCfg, ... }:
         let
-          updateOptions = builtins.removeAttrs dsCfg.options [
-            "encryption"
-            "casesensitivity"
-            "utf8only"
-            "normalization"
-            "volblocksize"
-            "pbkdf2iters"
-            "pbkdf2salt"
-            "keyformat"
-          ];
-
-          pullBackups = (
-            lib.filterAttrs (pullId: pullCfg: pullCfg.sourceDatasetId == dsId) config.ezfs.pull-backups
-          );
-
-          userAllows = lib.mapAttrs' (tds: tdsCfg: {
-            name = tdsCfg.user;
-            value = [
-              "send"
-              "hold"
-              "bookmark"
-            ];
-          }) pullBackups;
-
-          users = lib.mapAttrsToList (tds: tdsCfg: tdsCfg.user) pullBackups;
-
           pool = dsToPool dsCfg.name;
-
-          # LOGIC1: dependsOn - explicit systemd service dependencies
           requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
-
+          pullBackups = lib.filterAttrs (pullId: pullCfg: pullCfg.sourceDatasetId == dsId) config.ezfs.pull-backups;
+          backupUsers = lib.unique (lib.mapAttrsToList (_: cfg: cfg.user) pullBackups);
         in
         {
           services."ezfs-setup-dataset-${dsId}" = {
             description = "Mount ZFS dataset ${dsId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
+            startLimitIntervalSec = 0;
             requires = requiredServices;
             after = [
               "agenix.service"
@@ -361,52 +335,14 @@ in
               "zfs-mount.service"
             ];
             wantedBy = [ "multi-user.target" ];
-            path = [ "/run/booted-system/sw/" ];
+            path = [
+              "/run/booted-system/sw/"
+              pkgs.jq
+            ];
             enableStrictShellChecks = true;
-            environment.DATASET = dsCfg.name;
-            environment.USER = dsCfg.user;
-            environment.GROUP = dsCfg.group;
-            environment.BACKUP_USERS = lib.concatStringsSep " " users;
-            script = ''
-              set -x
-              setOption() {
-                if [ "$(zfs get -H -o value "$1" "$DATASET")" != "$2" ]; then
-                  zfs set "$1=$2" "$DATASET"
-                fi
-              }
-
-              pool=$(echo "$DATASET" | cut -d'/' -f1)
-
-              for user in $BACKUP_USERS; do
-                zfs unallow -u "$user" "$pool"
-              done
-
-              ${lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: "setOption ${n} ${v}") updateOptions)}
-
-              encryption=$(zfs get -H -o value encryption "$DATASET")
-              if [ "$encryption" != "off" ]; then
-
-                keystatus=$(zfs get -H -o value keystatus "$DATASET")
-                if [ "$keystatus" != "available" ]; then
-                  zfs load-key "$DATASET"
-                fi
-              fi
-
-              # LOGIC2: Mount all available datasets in mountpoint depth order
-              zfs mount -a
-
-              mountpoint=$(zfs get -H -o value mountpoint "$DATASET")
-              if [ -d "$mountpoint" ]; then
-                chown "$USER":"$GROUP" "$mountpoint"
-              fi
-
-              zfs unallow -u "$USER" "$DATASET"
-              ${lib.concatStringsSep "\n" (
-                lib.mapAttrsToList (
-                  n: v: "zfs allow -u ${n} ${lib.concatStringsSep "," v} ${dsCfg.name}"
-                ) userAllows
-              )}
-            '';
+            environment.DS_CFG = pkgs.writeText "ds-cfg-${dsId}.json" (builtins.toJSON dsCfg);
+            environment.BACKUP_USERS = pkgs.writeText "backup-users-${dsId}.json" (builtins.toJSON backupUsers);
+            script = builtins.readFile ./ezfs-setup-dataset.sh;
           };
         }
       );
