@@ -72,6 +72,7 @@ in
     age-mock = {
       enable = true;
       secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
+      secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
     };
 
     boot.initrd.postDeviceCommands = ''

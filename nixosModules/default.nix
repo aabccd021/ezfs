@@ -317,14 +317,7 @@ in
           (map (pool: "zfs-import-${pool}.service"))
         ];
 
-        # Remove privateKey as it references secrets that may not exist on this node
-        removePrivateKey = lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]);
-        ezfsCfg = {
-          inherit (config.ezfs) datasets;
-          hosts = removePrivateKey config.ezfs.hosts;
-          pull-backups = removePrivateKey config.ezfs.pull-backups;
-          push-backups = removePrivateKey config.ezfs.push-backups;
-        };
+        ezfsCfg = config.ezfs;
       in
       lib.mkIf (hostDatasets != { }) {
         systemd.services."ezfs-mount" = {
