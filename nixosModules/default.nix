@@ -81,22 +81,14 @@ let
 
   pullKnownHost =
     pushCfg:
-    let
-      hostId = config.ezfs.datasets.${pushCfg.sourceDatasetId}.hostId;
-      publicKey = config.ezfs.hosts.${hostId}.publicKey;
-    in
     pkgs.writeText "known-host" ''
-      ${pushCfg.host} ${publicKey}
+      ${pushCfg.host} ${config.ezfs.hosts.${config.ezfs.datasets.${pushCfg.sourceDatasetId}.hostId}.publicKey}
     '';
 
   pushKnownHost =
     pushCfg:
-    let
-      hostId = pushCfg.hostId;
-      publicKey = config.ezfs.hosts.${hostId}.publicKey;
-    in
     pkgs.writeText "known-host" ''
-      ${pushCfg.host} ${publicKey}
+      ${pushCfg.host} ${config.ezfs.hosts.${pushCfg.hostId}.publicKey}
     '';
 
   pullSshKey = pushId: "ezfs_pull_backup_ssh_key_${pushId}";
@@ -279,30 +271,21 @@ in
     }
     {
       assertions =
-        builtins.map
-          (
-            type:
-            let
-              typeHostKeys = builtins.filter (k: k.type == type) config.services.openssh.hostKeys;
-              paths = builtins.map (k: k.path) typeHostKeys;
-              uniquePaths = lib.lists.unique paths;
-              uniqueLength = builtins.length uniquePaths;
-              pathsStr = builtins.concatStringsSep ", " uniquePaths;
-            in
-            {
-              assertion = uniqueLength <= 1;
-              message = ''
-                Duplicate SSH host key with type ${type} is found: ${pathsStr}
-                SSH doesn't support multiple host keys of the same type
-              '';
-            }
-          )
-          [
-            "ed25519"
-            "rsa"
-            "ecdsa"
-            "dsa"
-          ];
+        let
+          ed25519Keys = builtins.filter (k: k.type == "ed25519") config.services.openssh.hostKeys;
+          paths = builtins.map (k: k.path) ed25519Keys;
+          uniquePaths = lib.lists.unique paths;
+          pathsStr = builtins.concatStringsSep ", " uniquePaths;
+        in
+        [
+          {
+            assertion = builtins.length uniquePaths <= 1;
+            message = ''
+              Duplicate SSH host key with type ed25519 is found: ${pathsStr}
+              SSH doesn't support multiple host keys of the same type
+            '';
+          }
+        ];
     }
     (
       let
@@ -366,25 +349,18 @@ in
       );
 
       systemd = mapPullTarget (
-        { pullId, pullCfg, ... }:
+        { pullId, ... }:
         let
-          pool = dsToPool pullCfg.targetDatasetName;
           credentialName = pullSshKey pullId;
         in
         {
           services."syncoid-pull-backup-${pullId}" = {
             wants = [
-              "zfs-import-${pool}.service"
               "agenix.service"
-              "zfs.target"
-              "zfs-import.target"
               "zfs-mount.service"
             ];
             after = [
-              "zfs-import-${pool}.service"
               "agenix.service"
-              "zfs.target"
-              "zfs-import.target"
               "zfs-mount.service"
             ];
             serviceConfig.LoadCredential = "${credentialName}:${config.age.secrets.${credentialName}.path}";
@@ -399,10 +375,6 @@ in
           dsCfg,
           ...
         }:
-        let
-          credentialName = pullSshKey pullId;
-          credentialPath = "%d/${credentialName}";
-        in
         {
           sanoid.enable = true;
           sanoid.datasets.${pullCfg.targetDatasetName} = {
@@ -411,7 +383,7 @@ in
           };
           syncoid.enable = true;
           syncoid.commands."pull-backup-${pullId}" = {
-            sshKey = credentialPath;
+            sshKey = "%d/${pullSshKey pullId}";
             source = pullSource dsCfg pullCfg;
             target = pullCfg.targetDatasetName;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
@@ -535,12 +507,8 @@ in
 
       age = mapPullSource (
         { ... }:
-        let
-          hostId = config.networking.hostId;
-          privateKey = config.ezfs.hosts.${hostId}.privateKey;
-        in
         {
-          secrets."ezfs_sshd_key".file = privateKey;
+          secrets."ezfs_sshd_key".file = config.ezfs.hosts.${config.networking.hostId}.privateKey;
         }
       );
 
@@ -598,7 +566,6 @@ in
     (
       let
         enabledPushBackups = lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups;
-        pushBackupsCfg = lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]) enabledPushBackups;
       in
       lib.mkIf (enabledPushBackups != { }) {
         systemd.services."ezfs-setup-push-backup" = {
@@ -620,7 +587,9 @@ in
             pkgs.jq
           ];
           enableStrictShellChecks = true;
-          environment.PUSH_BACKUPS = pkgs.writeText "push-backups.json" (builtins.toJSON pushBackupsCfg);
+          environment.PUSH_BACKUPS = pkgs.writeText "push-backups.json" (
+            builtins.toJSON (lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]) enabledPushBackups)
+          );
           script = builtins.readFile ./ezfs-setup-push-backup.sh;
         };
       }
@@ -673,12 +642,8 @@ in
 
       age = mapPushTarget (
         { ... }:
-        let
-          hostId = config.networking.hostId;
-          privateKey = config.ezfs.hosts.${hostId}.privateKey;
-        in
         {
-          secrets."ezfs_sshd_key".file = privateKey;
+          secrets."ezfs_sshd_key".file = config.ezfs.hosts.${config.networking.hostId}.privateKey;
         }
       );
 
@@ -721,14 +686,10 @@ in
           pushCfg,
           ...
         }:
-        let
-          credentialName = pushSshKey pushId;
-          credentialPath = "%d/${credentialName}";
-        in
         {
           syncoid.enable = true;
           syncoid.commands."push-backup-${pushId}" = {
-            sshKey = credentialPath;
+            sshKey = "%d/${pushSshKey pushId}";
             source = dsCfg.name;
             target = pushTarget pushCfg;
             # w = send dataset as is, not decrypted on transfer when the source dataset is encrypted
