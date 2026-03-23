@@ -120,7 +120,7 @@ in
       vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
 
       # Setup dataset
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
       assert_server()
 
       # Insert data
@@ -140,7 +140,7 @@ in
       server.succeed("ezfs-restore-push-backup-mybackup")
 
       # Setup dataset after restore
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
       assert_server()
 
       # Assert data restored

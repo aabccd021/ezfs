@@ -20,8 +20,8 @@ inputs: {
     # Create datasets and mount (both setup services needed for zfs allow)
     server.succeed("ezfs-create-encrypted")
     server.succeed("ezfs-create-unencrypted")
-    server.succeed("systemctl start --wait ezfs-setup-dataset-encrypted")
-    server.succeed("systemctl start --wait ezfs-setup-dataset-unencrypted")
+    server.succeed("systemctl start --wait ezfs-mount")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Write to encrypted layer
     server.succeed("zfs unmount spool/unencrypted")
@@ -51,8 +51,8 @@ inputs: {
     desktop.succeed("ezfs-restore-pull-backup-mybackup-unencrypted")
 
     # Mount via ezfs service (child first to simulate race condition)
-    server.succeed("systemctl start --wait ezfs-setup-dataset-unencrypted")
-    server.succeed("systemctl start --wait ezfs-setup-dataset-encrypted")
+    server.succeed("systemctl start --wait ezfs-mount")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Assert layered content after restore
     server.succeed("cat /data/child/test.txt | grep '^unencrypted$'")

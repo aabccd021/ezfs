@@ -105,17 +105,17 @@ in
       vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
 
       # Setup dataset (run multiple times to test idempotency)
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # Insert data
       server.succeed("echo 'hello world' > /spool/foo/hello.txt")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # Backup
       server.succeed("systemctl start --wait sanoid")
       server.succeed("systemctl start --wait ${nodes.server.ezfs.push-backups.mybackup.backupService}")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # Simulate data loss
       server.succeed("test -f /spool/foo/hello.txt")
@@ -127,12 +127,12 @@ in
       server.succeed("ezfs-restore-push-backup-mybackup")
 
       # Setup dataset (run multiple times after restore)
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # Assert data restored
       server.succeed("test -f /spool/foo/hello.txt")
       server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
     '';
 }

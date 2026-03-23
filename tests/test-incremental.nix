@@ -92,7 +92,7 @@ in
       desktop.succeed("zpool create dpool /dev/vdb")
 
       # setup
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # insert initial data
       server.succeed("echo 'version 1' > /spool/foo/data.txt")
@@ -125,7 +125,7 @@ in
       desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
       # setup after restore
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # assert latest data is restored (version 2 from snap2)
       server.succeed("cat /spool/foo/data.txt | grep '^version 2$'")

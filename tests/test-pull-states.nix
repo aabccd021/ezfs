@@ -25,7 +25,7 @@ inputs:
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # setup
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+    server.succeed("systemctl start --wait ezfs-mount")
     assert_server()
 
     # insert data
@@ -53,7 +53,7 @@ inputs:
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # setup
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+    server.succeed("systemctl start --wait ezfs-mount")
     assert_server()
 
     # assert

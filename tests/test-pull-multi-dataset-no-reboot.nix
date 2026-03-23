@@ -20,7 +20,7 @@ inputs:
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # setup
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # insert data
     server.succeed("echo 'foo' > /shallow/foo/hello.txt")
@@ -42,7 +42,7 @@ inputs:
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # setup
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # assert
     server.succeed("test -f /shallow/foo/hello.txt")

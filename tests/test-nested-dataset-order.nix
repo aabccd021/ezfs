@@ -47,11 +47,6 @@ in
       chmod 400 /run/child_key.txt
     '';
 
-    # Force parent to run only after child succeeds
-    systemd.services."ezfs-setup-dataset-parent" = {
-      after = [ "ezfs-setup-dataset-child.service" ];
-      requires = [ "ezfs-setup-dataset-child.service" ];
-    };
   };
 
   testScript = ''
@@ -63,8 +58,8 @@ in
     server.succeed("ezfs-create-parent")
     server.succeed("ezfs-create-child")
 
-    # Mount both datasets
-    server.succeed("systemctl start --wait ezfs-setup-dataset-child")
+    # Mount both datasets (single service handles ordering by mountpoint depth)
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Write to child layer
     server.succeed("echo 'child' > /data/child/test.txt")
@@ -79,7 +74,7 @@ in
     server.succeed("echo 'rootfs' > /data/child/test.txt")
 
     # Remount via service
-    server.succeed("systemctl start --wait ezfs-setup-dataset-child")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Assert layers are correct
     server.succeed("cat /data/child/test.txt | grep '^child$'")

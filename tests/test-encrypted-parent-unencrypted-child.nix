@@ -41,12 +41,6 @@ in
     '';
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
-
-    # Force encrypted (parent) to run only after unencrypted (child) succeeds
-    systemd.services."ezfs-setup-dataset-encrypted" = {
-      after = [ "ezfs-setup-dataset-unencrypted.service" ];
-      requires = [ "ezfs-setup-dataset-unencrypted.service" ];
-    };
   };
 
   testScript = ''
@@ -59,7 +53,7 @@ in
     server.succeed("ezfs-create-unencrypted")
 
     # Mount both datasets
-    server.succeed("systemctl start --wait ezfs-setup-dataset-unencrypted")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Write to unencrypted layer
     server.succeed("echo 'unencrypted' > /data/child/test.txt")
@@ -74,7 +68,7 @@ in
     server.succeed("echo 'rootfs' > /data/child/test.txt")
 
     # Remount via service
-    server.succeed("systemctl start --wait ezfs-setup-dataset-unencrypted")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Assert layers are correct
     server.succeed("cat /data/child/test.txt | grep '^unencrypted$'")

@@ -304,52 +304,58 @@ in
             "dsa"
           ];
     }
-    {
-      systemd = mapDataset (
-        { dsId, dsCfg, ... }:
-        let
-          pool = dsToPool dsCfg.name;
-          requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
-          # Remove privateKey as it references secrets that may not exist on this node
-          pullBackups = lib.mapAttrs
-            (_: cfg: builtins.removeAttrs cfg [ "privateKey" ])
-            config.ezfs.pull-backups;
-        in
-        {
-          services."ezfs-setup-dataset-${dsId}" = {
-            description = "Mount ZFS dataset ${dsId}";
-            restartIfChanged = true;
-            serviceConfig.Type = "oneshot";
-            startLimitIntervalSec = 0;
-            requires = requiredServices;
+    (
+      let
+        # Filter datasets for this host
+        hostDatasets = lib.filterAttrs
+          (_: cfg: cfg.enable && config.networking.hostId == cfg.hostId)
+          config.ezfs.datasets;
+
+        poolServices = lib.pipe hostDatasets [
+          (lib.mapAttrsToList (_: cfg: dsToPool cfg.name))
+          lib.unique
+          (map (pool: "zfs-import-${pool}.service"))
+        ];
+
+        # Remove privateKey as it references secrets that may not exist on this node
+        removePrivateKey = lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]);
+        ezfsCfg = {
+          inherit (config.ezfs) datasets;
+          hosts = removePrivateKey config.ezfs.hosts;
+          pull-backups = removePrivateKey config.ezfs.pull-backups;
+          push-backups = removePrivateKey config.ezfs.push-backups;
+        };
+      in
+      lib.mkIf (hostDatasets != { }) {
+        systemd.services."ezfs-mount" = {
+          description = "Mount and configure ezfs datasets";
+          restartIfChanged = true;
+          serviceConfig.Type = "oneshot";
+          startLimitIntervalSec = 0;
           after = [
-              "agenix.service"
-              "zfs-import-${pool}.service"
-              "zfs.target"
-              "zfs-import.target"
-              "zfs-mount.service"
-            ] ++ requiredServices;
-            wants = [
-              "agenix.service"
-              "zfs-import-${pool}.service"
-              "zfs.target"
-              "zfs-import.target"
-              "zfs-mount.service"
-            ];
-            wantedBy = [ "multi-user.target" ];
-            path = [
-              "/run/booted-system/sw/"
-              pkgs.jq
-            ];
-            enableStrictShellChecks = true;
-            environment.DS_ID = dsId;
-            environment.DS_CFG = pkgs.writeText "ds-cfg-${dsId}.json" (builtins.toJSON dsCfg);
-            environment.PULL_BACKUPS = pkgs.writeText "pull-backups.json" (builtins.toJSON pullBackups);
-            script = builtins.readFile ./ezfs-setup-dataset.sh;
-          };
-        }
-      );
-    }
+            "agenix.service"
+            "zfs.target"
+            "zfs-import.target"
+            "zfs-mount.service"
+          ] ++ poolServices;
+          wants = [
+            "agenix.service"
+            "zfs.target"
+            "zfs-import.target"
+            "zfs-mount.service"
+          ] ++ poolServices;
+          wantedBy = [ "multi-user.target" ];
+          path = [
+            "/run/booted-system/sw/"
+            pkgs.jq
+          ];
+          enableStrictShellChecks = true;
+          environment.HOST_ID = config.networking.hostId;
+          environment.EZFS_CFG = pkgs.writeText "ezfs.json" (builtins.toJSON ezfsCfg);
+          script = builtins.readFile ./ezfs-mount.sh;
+        };
+      }
+    )
     {
 
       boot = mapPullTarget (

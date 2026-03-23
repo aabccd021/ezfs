@@ -117,7 +117,7 @@ in
       vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
 
       # setup datasets (myfoo depends on myshallow)
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # insert data
       server.succeed("echo 'foo' > /shallow/foo/hello.txt")
@@ -139,7 +139,7 @@ in
       server.succeed("ezfs-restore-push-backup-mybackup")
 
       # setup dataset
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # assert foo dataset data is restored
       server.succeed("test -f /shallow/foo/hello.txt")

@@ -103,7 +103,7 @@ in
     desktop.succeed("zpool create dpool /dev/vdb")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Insert data to the dataset
     server.succeed("echo 'hello world' > /spool/foo/hello.txt")
@@ -127,7 +127,7 @@ in
     desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
     # Setup and mount the dataset
-    server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Assert that the data is restored
     server.succeed("test -f /spool/foo/hello.txt")

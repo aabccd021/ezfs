@@ -20,8 +20,8 @@ inputs: {
     # Create datasets and mount (both setup services needed for zfs allow)
     server.succeed("ezfs-create-parent")
     server.succeed("ezfs-create-child")
-    server.succeed("systemctl start --wait ezfs-setup-dataset-parent")
-    server.succeed("systemctl start --wait ezfs-setup-dataset-child")
+    server.succeed("systemctl start --wait ezfs-mount")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Write to parent layer
     server.succeed("zfs unmount spool/parent/child")
@@ -50,8 +50,8 @@ inputs: {
     desktop.succeed("ezfs-restore-pull-backup-mybackup-child")
 
     # Mount via ezfs service (child first to simulate race condition)
-    server.succeed("systemctl start --wait ezfs-setup-dataset-child")
-    server.succeed("systemctl start --wait ezfs-setup-dataset-parent")
+    server.succeed("systemctl start --wait ezfs-mount")
+    server.succeed("systemctl start --wait ezfs-mount")
 
     # Assert layered content after restore
     server.succeed("cat /data/child/test.txt | grep '^child$'")

@@ -18,16 +18,16 @@ inputs:
       desktop.succeed("zpool create dpool /dev/vdb")
 
       # setup
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # insert data
       server.succeed("echo 'hello world' > /spool/foo/hello.txt")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # backup
       server.succeed("systemctl start --wait sanoid")
       desktop.succeed("systemctl start --wait ${nodes.desktop.ezfs.pull-backups.mybackup.backupService}")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # destroy
       server.succeed("test -f /spool/foo/hello.txt")
@@ -39,11 +39,11 @@ inputs:
       desktop.succeed("ezfs-restore-pull-backup-mybackup")
 
       # setup
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
 
       # assert
       server.succeed("test -f /spool/foo/hello.txt")
       server.succeed("cat /spool/foo/hello.txt | grep '^hello world$'")
-      server.succeed("systemctl start --wait ezfs-setup-dataset-myfoo")
+      server.succeed("systemctl start --wait ezfs-mount")
     '';
 }
