@@ -118,7 +118,7 @@ in
       vps.succeed("zpool create vpool /dev/vdb")
 
       # Setup on vps
-      vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
+      vps.succeed("systemctl start --wait ezfs-setup-push-backup")
 
       # Setup and mount the dataset
       server.succeed("systemctl start --wait ezfs-mount")

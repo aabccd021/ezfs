@@ -616,48 +616,48 @@ in
         }
       );
 
-      systemd = mapPushTarget (
-        { pushId, pushCfg, ... }:
-        let
-          pool = dsToPool pushCfg.targetDatasetName;
-        in
-        {
-          services."ezfs-setup-push-backup-${pushId}" = {
-            description = "Setup ZFS push backup ${pushId}";
-            restartIfChanged = true;
-            serviceConfig.Type = "oneshot";
-            after = [
-              "agenix.service"
-              "zfs-import-${pool}.service"
-              "zfs.target"
-              "zfs-import.target"
-              "zfs-mount.service"
-            ];
-            wants = [
-              "agenix.service"
-              "zfs-import-${pool}.service"
-              "zfs.target"
-              "zfs-import.target"
-              "zfs-mount.service"
-            ];
-            wantedBy = [ "multi-user.target" ];
-            path = [ "/run/booted-system/sw/" ];
-            environment.DATASET = pushCfg.targetDatasetName;
-            environment.USER = pushCfg.user;
-            script = ''
-              set -x
-              pool=$(echo "$DATASET" | cut -d'/' -f1)
-              zfs unallow -u "$USER" "$pool"
-              zfs allow -u "$USER" create,receive,mount "$pool"
-
-              # if dataset already exists, we need to set the options
-              if zfs list -H "$DATASET" >/dev/null 2>&1; then
-                zfs allow -u "$USER" canmount,mountpoint,keylocation "$DATASET"
-              fi
-            '';
-          };
-        }
-      );
+    }
+    (
+      let
+        enabledPushBackups = lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups;
+        poolServices = lib.pipe enabledPushBackups [
+          (lib.mapAttrsToList (_: cfg: dsToPool cfg.targetDatasetName))
+          lib.unique
+          (map (pool: "zfs-import-${pool}.service"))
+        ];
+        # Remove privateKey as it references secrets that may not exist on this node
+        pushBackupsCfg = lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]) enabledPushBackups;
+      in
+      lib.mkIf (enabledPushBackups != { }) {
+        systemd.services."ezfs-setup-push-backup" = {
+          description = "Setup ZFS push backups";
+          restartIfChanged = true;
+          serviceConfig.Type = "oneshot";
+          startLimitIntervalSec = 0;
+          after = [
+            "agenix.service"
+            "zfs.target"
+            "zfs-import.target"
+            "zfs-mount.service"
+          ] ++ poolServices;
+          wants = [
+            "agenix.service"
+            "zfs.target"
+            "zfs-import.target"
+            "zfs-mount.service"
+          ] ++ poolServices;
+          wantedBy = [ "multi-user.target" ];
+          path = [
+            "/run/booted-system/sw/"
+            pkgs.jq
+          ];
+          enableStrictShellChecks = true;
+          environment.PUSH_BACKUPS = pkgs.writeText "push-backups.json" (builtins.toJSON pushBackupsCfg);
+          script = builtins.readFile ./ezfs-setup-push-backup.sh;
+        };
+      }
+    )
+    {
 
       environment = mapPushTarget (
         { pushId, pushCfg, ... }:

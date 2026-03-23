@@ -114,7 +114,7 @@ in
       server.succeed("ezfs-create-myshallow")
 
       # setup on vps
-      vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
+      vps.succeed("systemctl start --wait ezfs-setup-push-backup")
 
       # setup datasets (myfoo depends on myshallow)
       server.succeed("systemctl start --wait ezfs-mount")

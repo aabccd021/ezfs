@@ -117,7 +117,7 @@ in
       server.succeed("ezfs-create-myfoo")
 
       # Setup on vps
-      vps.succeed("systemctl start --wait ezfs-setup-push-backup-mybackup")
+      vps.succeed("systemctl start --wait ezfs-setup-push-backup")
 
       # Setup dataset
       server.succeed("systemctl start --wait ezfs-mount")
