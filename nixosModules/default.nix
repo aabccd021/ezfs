@@ -310,8 +310,10 @@ in
         let
           pool = dsToPool dsCfg.name;
           requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
-          pullBackups = lib.filterAttrs (pullId: pullCfg: pullCfg.sourceDatasetId == dsId) config.ezfs.pull-backups;
-          backupUsers = lib.unique (lib.mapAttrsToList (_: cfg: cfg.user) pullBackups);
+          # Remove privateKey as it references secrets that may not exist on this node
+          pullBackups = lib.mapAttrs
+            (_: cfg: builtins.removeAttrs cfg [ "privateKey" ])
+            config.ezfs.pull-backups;
         in
         {
           services."ezfs-setup-dataset-${dsId}" = {
@@ -320,7 +322,7 @@ in
             serviceConfig.Type = "oneshot";
             startLimitIntervalSec = 0;
             requires = requiredServices;
-            after = [
+          after = [
               "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
@@ -340,8 +342,9 @@ in
               pkgs.jq
             ];
             enableStrictShellChecks = true;
+            environment.DS_ID = dsId;
             environment.DS_CFG = pkgs.writeText "ds-cfg-${dsId}.json" (builtins.toJSON dsCfg);
-            environment.BACKUP_USERS = pkgs.writeText "backup-users-${dsId}.json" (builtins.toJSON backupUsers);
+            environment.PULL_BACKUPS = pkgs.writeText "pull-backups.json" (builtins.toJSON pullBackups);
             script = builtins.readFile ./ezfs-setup-dataset.sh;
           };
         }

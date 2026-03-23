@@ -10,7 +10,7 @@ pool=$(echo "$dataset" | cut -d'/' -f1)
 CREATE_ONLY_OPTIONS='["encryption", "casesensitivity", "utf8only", "normalization", "volblocksize", "pbkdf2iters", "pbkdf2salt", "keyformat"]'
 
 # Unallow backup users from pool
-jq -r '.[]' "$BACKUP_USERS" | while read -r backupUser; do
+jq -r --arg dsId "$DS_ID" '.[] | select(.sourceDatasetId == $dsId) | .user' "$PULL_BACKUPS" | sort -u | while read -r backupUser; do
   zfs unallow -u "$backupUser" "$pool"
 done
 
@@ -43,6 +43,6 @@ fi
 zfs unallow -u "$user" "$dataset"
 
 # Set user allows for backup users (send, hold, bookmark permissions)
-jq -r '.[]' "$BACKUP_USERS" | while read -r allowUser; do
+jq -r --arg dsId "$DS_ID" '.[] | select(.sourceDatasetId == $dsId) | .user' "$PULL_BACKUPS" | sort -u | while read -r allowUser; do
   zfs allow -u "$allowUser" send,hold,bookmark "$dataset"
 done
