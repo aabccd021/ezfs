@@ -43,7 +43,7 @@ in
   name = "push-idempotent";
 
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
       imports = [
         inputs.agenix.nixosModules.default

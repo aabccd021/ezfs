@@ -43,7 +43,7 @@ in
   name = "push-reboot-all";
 
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
       imports = [
         inputs.agenix.nixosModules.default

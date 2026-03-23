@@ -17,6 +17,7 @@
 
       treefmtEval = inputs.treefmt-nix.lib.evalModule pkgs {
         projectRootFile = "flake.nix";
+        programs.deadnix.enable = true;
         programs.nixfmt.enable = true;
         programs.shfmt.enable = true;
         programs.shellcheck.enable = true;
@@ -45,7 +46,10 @@
       };
 
       packages.x86_64-linux.test-all = pkgs.linkFarm "ezfs-tests" (
-        builtins.map (name: { inherit name; path = tests.${name}; }) (builtins.attrNames tests)
+        builtins.map (name: {
+          inherit name;
+          path = tests.${name};
+        }) (builtins.attrNames tests)
       );
 
       formatter.x86_64-linux = treefmtEval.config.build.wrapper;

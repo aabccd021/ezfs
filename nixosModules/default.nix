@@ -258,7 +258,7 @@ in
     {
       assertions =
         let
-          hostIds = lib.lists.unique (lib.mapAttrsToList (dsName: dsCfg: dsCfg.hostId) config.ezfs.datasets);
+          hostIds = lib.lists.unique (lib.mapAttrsToList (_dsName: dsCfg: dsCfg.hostId) config.ezfs.datasets);
         in
         builtins.map (
           hostId:
@@ -307,9 +307,9 @@ in
     (
       let
         # Filter datasets for this host
-        hostDatasets = lib.filterAttrs
-          (_: cfg: cfg.enable && config.networking.hostId == cfg.hostId)
-          config.ezfs.datasets;
+        hostDatasets = lib.filterAttrs (
+          _: cfg: cfg.enable && config.networking.hostId == cfg.hostId
+        ) config.ezfs.datasets;
 
         poolServices = lib.pipe hostDatasets [
           (lib.mapAttrsToList (_: cfg: dsToPool cfg.name))
@@ -337,13 +337,15 @@ in
             "zfs.target"
             "zfs-import.target"
             "zfs-mount.service"
-          ] ++ poolServices;
+          ]
+          ++ poolServices;
           wants = [
             "agenix.service"
             "zfs.target"
             "zfs-import.target"
             "zfs-mount.service"
-          ] ++ poolServices;
+          ]
+          ++ poolServices;
           wantedBy = [ "multi-user.target" ];
           path = [
             "/run/booted-system/sw/"

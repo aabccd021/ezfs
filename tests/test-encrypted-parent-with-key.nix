@@ -1,8 +1,4 @@
-inputs:
-let
-  mock-secrets = inputs.mock-secrets-nix.lib.secrets;
-in
-{
+inputs: {
   name = "encrypted-parent-with-key";
 
   nodes.server = {

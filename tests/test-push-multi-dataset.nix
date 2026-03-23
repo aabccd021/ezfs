@@ -51,7 +51,7 @@ in
   name = "push-multi-dataset";
 
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
       imports = [
         inputs.agenix.nixosModules.default

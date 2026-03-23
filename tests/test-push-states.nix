@@ -49,7 +49,7 @@ in
   name = "push-states";
 
   nodes.server =
-    { config, ... }:
+    { ... }:
     {
       imports = [
         inputs.agenix.nixosModules.default
