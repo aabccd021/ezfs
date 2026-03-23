@@ -306,18 +306,9 @@ in
     }
     (
       let
-        # Filter datasets for this host
         hostDatasets = lib.filterAttrs (
           _: cfg: cfg.enable && config.networking.hostId == cfg.hostId
         ) config.ezfs.datasets;
-
-        poolServices = lib.pipe hostDatasets [
-          (lib.mapAttrsToList (_: cfg: dsToPool cfg.name))
-          lib.unique
-          (map (pool: "zfs-import-${pool}.service"))
-        ];
-
-        ezfsCfg = config.ezfs;
       in
       lib.mkIf (hostDatasets != { }) {
         systemd.services."ezfs-mount" = {
@@ -327,18 +318,12 @@ in
           startLimitIntervalSec = 0;
           after = [
             "agenix.service"
-            "zfs.target"
-            "zfs-import.target"
             "zfs-mount.service"
-          ]
-          ++ poolServices;
+          ];
           wants = [
             "agenix.service"
-            "zfs.target"
-            "zfs-import.target"
             "zfs-mount.service"
-          ]
-          ++ poolServices;
+          ];
           wantedBy = [ "multi-user.target" ];
           path = [
             "/run/booted-system/sw/"
@@ -346,7 +331,7 @@ in
           ];
           enableStrictShellChecks = true;
           environment.HOST_ID = config.networking.hostId;
-          environment.EZFS_CFG = pkgs.writeText "ezfs.json" (builtins.toJSON ezfsCfg);
+          environment.EZFS_CFG = pkgs.writeText "ezfs.json" (builtins.toJSON config.ezfs);
           script = builtins.readFile ./ezfs-mount.sh;
         };
       }
@@ -613,12 +598,6 @@ in
     (
       let
         enabledPushBackups = lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups;
-        poolServices = lib.pipe enabledPushBackups [
-          (lib.mapAttrsToList (_: cfg: dsToPool cfg.targetDatasetName))
-          lib.unique
-          (map (pool: "zfs-import-${pool}.service"))
-        ];
-        # Remove privateKey as it references secrets that may not exist on this node
         pushBackupsCfg = lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]) enabledPushBackups;
       in
       lib.mkIf (enabledPushBackups != { }) {
@@ -629,16 +608,12 @@ in
           startLimitIntervalSec = 0;
           after = [
             "agenix.service"
-            "zfs.target"
-            "zfs-import.target"
             "zfs-mount.service"
-          ] ++ poolServices;
+          ];
           wants = [
             "agenix.service"
-            "zfs.target"
-            "zfs-import.target"
             "zfs-mount.service"
-          ] ++ poolServices;
+          ];
           wantedBy = [ "multi-user.target" ];
           path = [
             "/run/booted-system/sw/"
