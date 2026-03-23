@@ -63,6 +63,7 @@ let
       systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
       age-mock = {
         enable = true;
+        secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
         secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
       };
       virtualisation.emptyDiskImages = [ 4096 ];
@@ -83,7 +84,7 @@ in
     ];
 
     networking.hostId = "9b037621";
-
+    ezfs.enable = true;
   };
 
   desktop = {
@@ -96,6 +97,7 @@ in
     ];
 
     networking.hostId = "76219b03";
+    ezfs.enable = true;
     ezfs.pull-backups.mybackup.enable = true;
 
   };

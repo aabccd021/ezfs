@@ -53,6 +53,7 @@ in
       sharedModule
     ];
 
+    ezfs.enable = true;
     networking.hostId = "9b037621";
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
@@ -77,6 +78,7 @@ in
       sharedModule
     ];
 
+    ezfs.enable = true;
     networking.hostId = "76219b03";
 
     ezfs.pull-backups.mybackup.enable = true;
@@ -85,6 +87,7 @@ in
 
     age-mock = {
       enable = true;
+      secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
       secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
     };
   };

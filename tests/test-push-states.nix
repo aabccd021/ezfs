@@ -57,6 +57,7 @@ in
         sharedModule
       ];
 
+      ezfs.enable = true;
       # required for zfs
       networking.hostId = "9b037621";
 
@@ -85,6 +86,7 @@ in
       sharedModule
     ];
 
+    ezfs.enable = true;
     networking.hostId = "76219b03";
 
     ezfs.push-backups.mybackup.enable = true;

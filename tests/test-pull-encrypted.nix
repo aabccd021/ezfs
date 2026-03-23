@@ -49,6 +49,7 @@ in
       sharedModule
     ];
 
+    ezfs.enable = true;
     # required for zfs
     networking.hostId = "9b037621";
 
@@ -74,6 +75,7 @@ in
       sharedModule
     ];
 
+    ezfs.enable = true;
     networking.hostId = "76219b03";
 
     ezfs.pull-backups.mybackup.enable = true;
@@ -82,6 +84,7 @@ in
     systemd.services."zfs-import-dpool".serviceConfig.TimeoutStartSec = "1s";
     age-mock = {
       enable = true;
+      secrets.sshd_private_key.value = mock-secrets.ed25519.bob.private;
       secrets.backup_private_key.value = mock-secrets.ed25519.alice.private;
     };
   };

@@ -13,7 +13,7 @@ let
     lib.mkMerge (
       lib.mapAttrsToList (
         dsId: dsCfg:
-        lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
+        lib.mkIf (config.ezfs.enable && dsCfg.enable && config.networking.hostId == dsCfg.hostId) (fn {
           dsId = dsId;
           dsCfg = dsCfg;
         })
@@ -25,7 +25,7 @@ let
     lib.mkMerge (
       lib.mapAttrsToList (
         pushId: pushCfg:
-        lib.mkIf pushCfg.enable (fn {
+        lib.mkIf (config.ezfs.enable && pushCfg.enable) (fn {
           dsCfg = config.ezfs.datasets.${pushCfg.sourceDatasetId};
           pushId = pushId;
           pushCfg = pushCfg;
@@ -41,7 +41,7 @@ let
         let
           dsCfg = config.ezfs.datasets.${pushCfg.sourceDatasetId};
         in
-        lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
+        lib.mkIf (config.ezfs.enable && dsCfg.enable && config.networking.hostId == dsCfg.hostId) (fn {
           dsCfg = dsCfg;
           pushId = pushId;
           pushCfg = pushCfg;
@@ -54,7 +54,7 @@ let
     lib.mkMerge (
       lib.mapAttrsToList (
         pullId: pullCfg:
-        lib.mkIf pullCfg.enable (fn {
+        lib.mkIf (config.ezfs.enable && pullCfg.enable) (fn {
           dsCfg = config.ezfs.datasets.${pullCfg.sourceDatasetId};
           pullId = pullId;
           pullCfg = pullCfg;
@@ -70,7 +70,7 @@ let
         let
           dsCfg = config.ezfs.datasets.${pullCfg.sourceDatasetId};
         in
-        lib.mkIf (dsCfg.enable && (config.networking.hostId == dsCfg.hostId)) (fn {
+        lib.mkIf (config.ezfs.enable && dsCfg.enable && config.networking.hostId == dsCfg.hostId) (fn {
           dsId = pullCfg.sourceDatasetId;
           dsCfg = dsCfg;
           pullId = pullId;
@@ -102,6 +102,7 @@ let
 in
 {
   options.ezfs = {
+    enable = lib.mkEnableOption "ezfs ZFS dataset management";
     hosts = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {
@@ -287,38 +288,40 @@ in
           }
         ];
     }
-    (
-      let
-        hostDatasets = lib.filterAttrs (
-          _: cfg: cfg.enable && config.networking.hostId == cfg.hostId
-        ) config.ezfs.datasets;
-      in
-      lib.mkIf (hostDatasets != { }) {
-        systemd.services."ezfs-mount" = {
-          description = "Mount and configure ezfs datasets";
-          restartIfChanged = true;
-          serviceConfig.Type = "oneshot";
-          startLimitIntervalSec = 0;
-          after = [
-            "agenix.service"
-            "zfs-mount.service"
-          ];
-          wants = [
-            "agenix.service"
-            "zfs-mount.service"
-          ];
-          wantedBy = [ "multi-user.target" ];
-          path = [
-            "/run/booted-system/sw/"
-            pkgs.jq
-          ];
-          enableStrictShellChecks = true;
-          environment.HOST_ID = config.networking.hostId;
-          environment.EZFS_CFG = pkgs.writeText "ezfs.json" (builtins.toJSON config.ezfs);
-          script = builtins.readFile ./ezfs-mount.sh;
-        };
-      }
-    )
+    (lib.mkIf config.ezfs.enable {
+      systemd.services."ezfs-mount" = {
+        description = "Mount and configure ezfs datasets";
+        restartIfChanged = true;
+        serviceConfig.Type = "oneshot";
+        startLimitIntervalSec = 0;
+        after = [
+          "agenix.service"
+          "zfs-mount.service"
+        ];
+        wants = [
+          "agenix.service"
+          "zfs-mount.service"
+        ];
+        wantedBy = [ "multi-user.target" ];
+        path = [
+          "/run/booted-system/sw/"
+          pkgs.jq
+        ];
+        enableStrictShellChecks = true;
+        environment.HOST_ID = config.networking.hostId;
+        environment.EZFS_CFG = pkgs.writeText "ezfs.json" (
+          builtins.toJSON (
+            config.ezfs
+            // {
+              datasets = lib.filterAttrs (
+                _: ds: ds.enable && ds.hostId == config.networking.hostId
+              ) config.ezfs.datasets;
+            }
+          )
+        );
+        script = builtins.readFile ./ezfs-mount.sh;
+      };
+    })
     {
 
       boot = mapPullTarget (
@@ -563,37 +566,36 @@ in
       );
 
     }
-    (
-      let
-        enabledPushBackups = lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups;
-      in
-      lib.mkIf (enabledPushBackups != { }) {
-        systemd.services."ezfs-setup-push-backup" = {
-          description = "Setup ZFS push backups";
-          restartIfChanged = true;
-          serviceConfig.Type = "oneshot";
-          startLimitIntervalSec = 0;
-          after = [
-            "agenix.service"
-            "zfs-mount.service"
-          ];
-          wants = [
-            "agenix.service"
-            "zfs-mount.service"
-          ];
-          wantedBy = [ "multi-user.target" ];
-          path = [
-            "/run/booted-system/sw/"
-            pkgs.jq
-          ];
-          enableStrictShellChecks = true;
-          environment.PUSH_BACKUPS = pkgs.writeText "push-backups.json" (
-            builtins.toJSON (lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]) enabledPushBackups)
-          );
-          script = builtins.readFile ./ezfs-setup-push-backup.sh;
-        };
-      }
-    )
+    (lib.mkIf config.ezfs.enable {
+      systemd.services."ezfs-setup-push-backup" = {
+        description = "Setup ZFS push backups";
+        restartIfChanged = true;
+        serviceConfig.Type = "oneshot";
+        startLimitIntervalSec = 0;
+        after = [
+          "agenix.service"
+          "zfs-mount.service"
+        ];
+        wants = [
+          "agenix.service"
+          "zfs-mount.service"
+        ];
+        wantedBy = [ "multi-user.target" ];
+        path = [
+          "/run/booted-system/sw/"
+          pkgs.jq
+        ];
+        enableStrictShellChecks = true;
+        environment.PUSH_BACKUPS = pkgs.writeText "push-backups.json" (
+          builtins.toJSON (
+            lib.mapAttrs
+              (_: cfg: builtins.removeAttrs cfg [ "privateKey" ])
+              (lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups)
+          )
+        );
+        script = builtins.readFile ./ezfs-setup-push-backup.sh;
+      };
+    })
     {
 
       environment = mapPushTarget (

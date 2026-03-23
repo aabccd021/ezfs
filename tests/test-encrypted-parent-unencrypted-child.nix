@@ -8,6 +8,7 @@ inputs: {
       inputs.age-mock-nix.nixosModules.default
     ];
 
+    ezfs.enable = true;
     networking.hostId = "9b037621";
     virtualisation.emptyDiskImages = [ 4096 ];
     age.identityPaths = [ ];
