@@ -19,16 +19,33 @@ in
     ezfs.datasets.parent = {
       name = "spool/parent";
       hostId = "9b037621";
-      options.mountpoint = "/data";
+      options = {
+        mountpoint = "/data";
+        encryption = "on";
+        keyformat = "passphrase";
+        keylocation = "file:///run/parent_key.txt";
+      };
     };
 
     ezfs.datasets.child = {
       name = "spool/parent/child";
       hostId = "9b037621";
-      options.mountpoint = "/data/child";
+      options = {
+        mountpoint = "/data/child";
+        encryption = "on";
+        keyformat = "passphrase";
+        keylocation = "file:///run/child_key.txt";
+      };
     };
 
     systemd.services."zfs-import-spool".serviceConfig.TimeoutStartSec = "1s";
+
+    boot.initrd.postDeviceCommands = ''
+      echo "parent key" > /run/parent_key.txt
+      chmod 400 /run/parent_key.txt
+      echo "child key" > /run/child_key.txt
+      chmod 400 /run/child_key.txt
+    '';
 
     # Force parent to run only after child succeeds
     systemd.services."ezfs-setup-dataset-parent" = {

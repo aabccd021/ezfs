@@ -337,7 +337,7 @@ in
           pool = dsToPool dsCfg.name;
 
           # LOGIC1: dependsOn - explicit systemd service dependencies
-          # requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
+          requiredServices = builtins.map (dep: "ezfs-setup-dataset-${dep}.service") dsCfg.dependsOn;
 
         in
         {
@@ -345,14 +345,14 @@ in
             description = "Mount ZFS dataset ${dsId}";
             restartIfChanged = true;
             serviceConfig.Type = "oneshot";
-            # LOGIC1: requires = requiredServices;
+            requires = requiredServices;
             after = [
               "agenix.service"
               "zfs-import-${pool}.service"
               "zfs.target"
               "zfs-import.target"
               "zfs-mount.service"
-            ]; # LOGIC1: ++ requiredServices;
+            ] ++ requiredServices;
             wants = [
               "agenix.service"
               "zfs-import-${pool}.service"

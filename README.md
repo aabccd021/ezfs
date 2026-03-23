@@ -2,9 +2,12 @@
 
 Easy ZFS configuration for NixOS
 
+# Limitations
+
+- Only encrypted datasets are supported
+
 # TODO
 
-- disallow encryption off
 - force use agenix for encryption key
 - dataset `enable` set to false by default
 - hostId required for pulltarget and pushtarget

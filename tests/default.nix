@@ -25,4 +25,6 @@ in
   test-encrypted-parent-unencrypted-child = mkTest ./test-encrypted-parent-unencrypted-child.nix;
   test-encrypted-parent-no-key = mkTest ./test-encrypted-parent-no-key.nix;
   test-encrypted-parent-with-key = mkTest ./test-encrypted-parent-with-key.nix;
+  test-encrypted-parent-with-key-restore = mkTest ./test-encrypted-parent-with-key-restore.nix;
+  test-nested-dataset-order-restore = mkTest ./test-nested-dataset-order-restore.nix;
 }
