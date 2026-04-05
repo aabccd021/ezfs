@@ -91,6 +91,27 @@ let
       ${pushCfg.host} ${config.ezfs.hosts.${pushCfg.hostId}.publicKey}
     '';
 
+  mapResticBackup =
+    fn:
+    lib.mkMerge (
+      lib.mapAttrsToList (
+        resticId: resticCfg:
+        let
+          dsCfg = config.ezfs.datasets.${resticCfg.sourceDatasetId};
+        in
+        lib.mkIf (config.ezfs.enable && resticCfg.enable && config.networking.hostId == dsCfg.hostId) (fn {
+          dsId = resticCfg.sourceDatasetId;
+          dsCfg = dsCfg;
+          resticId = resticId;
+          resticCfg = resticCfg;
+        })
+      ) config.ezfs.restic-backups
+    );
+
+  resticPasswordSecret = resticId: "ezfs_restic_password_${resticId}";
+  resticAwsAccessKeySecret = resticId: "ezfs_restic_aws_access_key_${resticId}";
+  resticAwsSecretKeySecret = resticId: "ezfs_restic_aws_secret_key_${resticId}";
+
   pullSshKey = pushId: "ezfs_pull_backup_ssh_key_${pushId}";
 
   pushSshKey = pushId: "ezfs_push_backup_ssh_key_${pushId}";
@@ -239,6 +260,64 @@ in
               };
               privateKey = lib.mkOption {
                 type = lib.types.path;
+              };
+            };
+          }
+        )
+      );
+    };
+    restic-backups = lib.mkOption {
+      default = { };
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { config, ... }:
+          {
+            options = {
+              enable = lib.mkEnableOption "Enable the restic backup to S3";
+              backupService = lib.mkOption {
+                type = lib.types.str;
+                readOnly = true;
+                default = "restic-backup-${config._module.args.name}.service";
+              };
+              sourceDatasetId = lib.mkOption {
+                type = lib.types.str;
+                description = "Dataset ID to backup (key in ezfs.datasets)";
+              };
+              repository = lib.mkOption {
+                type = lib.types.str;
+                description = "S3 URL (e.g., s3:http://garage:3900/bucket)";
+              };
+              passwordFile = lib.mkOption {
+                type = lib.types.path;
+                description = "Agenix secret path for restic repo password";
+              };
+              awsAccessKeyIdFile = lib.mkOption {
+                type = lib.types.path;
+                description = "Agenix secret path for AWS_ACCESS_KEY_ID";
+              };
+              awsSecretAccessKeyFile = lib.mkOption {
+                type = lib.types.path;
+                description = "Agenix secret path for AWS_SECRET_ACCESS_KEY";
+              };
+              pruneOpts = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                description = "Options for restic forget --prune (e.g., --keep-daily 7)";
+              };
+              extraBackupArgs = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                description = "Extra arguments for restic backup";
+              };
+              exclude = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                description = "Patterns to exclude from backup";
+              };
+              timerConfig = lib.mkOption {
+                type = lib.types.nullOr (lib.types.attrsOf lib.types.str);
+                default = { OnCalendar = "daily"; };
+                description = "Systemd timer config (set to null to disable timer)";
               };
             };
           }
@@ -738,6 +817,152 @@ in
                 --recvoptions="u" \
                 ${pushTarget pushCfg} \
                 ${dsCfg.name}
+              '';
+            })
+          ];
+        }
+      );
+    }
+    {
+      age = mapResticBackup (
+        { resticId, resticCfg, ... }:
+        {
+          secrets.${resticPasswordSecret resticId}.file = resticCfg.passwordFile;
+          secrets.${resticAwsAccessKeySecret resticId}.file = resticCfg.awsAccessKeyIdFile;
+          secrets.${resticAwsSecretKeySecret resticId}.file = resticCfg.awsSecretAccessKeyFile;
+        }
+      );
+
+      systemd.services = mapResticBackup (
+        {
+          resticId,
+          resticCfg,
+          dsCfg,
+          ...
+        }:
+        {
+          "restic-backup-${resticId}" = {
+            description = "Restic backup for ${dsCfg.name} to S3";
+            wants = [
+              "agenix.service"
+              "zfs-mount.service"
+              "ezfs-mount.service"
+              "network-online.target"
+            ];
+            after = [
+              "agenix.service"
+              "zfs-mount.service"
+              "ezfs-mount.service"
+              "network-online.target"
+            ];
+            path = [
+              "/run/booted-system/sw"
+              pkgs.restic
+            ];
+            environment = {
+              RESTIC_REPOSITORY = resticCfg.repository;
+              DATASET = dsCfg.name;
+              MOUNTPOINT = dsCfg.options.mountpoint or "/${dsCfg.name}";
+              EXTRA_BACKUP_ARGS = lib.concatStringsSep " " (
+                resticCfg.extraBackupArgs
+                ++ (map (p: "--exclude=${p}") resticCfg.exclude)
+              );
+              PRUNE_OPTS = lib.concatStringsSep " " resticCfg.pruneOpts;
+            };
+            serviceConfig = {
+              Type = "oneshot";
+              LoadCredential = [
+                "password:${config.age.secrets.${resticPasswordSecret resticId}.path}"
+                "aws_access_key:${config.age.secrets.${resticAwsAccessKeySecret resticId}.path}"
+                "aws_secret_key:${config.age.secrets.${resticAwsSecretKeySecret resticId}.path}"
+              ];
+            };
+            enableStrictShellChecks = true;
+            script = builtins.readFile ./ezfs-restic-backup.sh;
+          };
+        }
+      );
+
+      systemd.timers = mapResticBackup (
+        { resticId, resticCfg, ... }:
+        lib.mkIf (resticCfg.timerConfig != null) {
+          "restic-backup-${resticId}" = {
+            wantedBy = [ "timers.target" ];
+            timerConfig = {
+              Persistent = true;
+            } // resticCfg.timerConfig;
+          };
+        }
+      );
+
+      environment = mapResticBackup (
+        {
+          dsId,
+          dsCfg,
+          resticId,
+          resticCfg,
+          ...
+        }:
+        {
+          systemPackages = [
+            (pkgs.writeShellApplication {
+              name = "ezfs-prepare-restore-restic-backup-${resticId}";
+              runtimeInputs = [ "/run/booted-system/sw" ];
+              text = ''
+                # Recreate the ZFS dataset if destroyed
+                if ! zfs list -H "${dsCfg.name}" >/dev/null 2>&1; then
+                  zfs create -u ${
+                    lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") dsCfg.options)
+                  } ${dsCfg.name}
+                fi
+
+                # Mount the dataset
+                mounted=$(zfs get -H -o value mounted "${dsCfg.name}")
+                if [ "$mounted" != "yes" ]; then
+                  zfs mount "${dsCfg.name}"
+                fi
+
+                # Set ownership
+                mountpoint=$(zfs get -H -o value mountpoint "${dsCfg.name}")
+                chown "${dsCfg.user}":"${dsCfg.group}" "$mountpoint"
+              '';
+            })
+
+            (pkgs.writeShellApplication {
+              name = "ezfs-restore-restic-backup-${resticId}";
+              runtimeInputs = [
+                "/run/booted-system/sw"
+                pkgs.restic
+              ];
+              text = ''
+                # Load credentials from agenix secrets
+                export RESTIC_PASSWORD
+                RESTIC_PASSWORD=$(cat "${config.age.secrets.${resticPasswordSecret resticId}.path}")
+                export AWS_ACCESS_KEY_ID
+                AWS_ACCESS_KEY_ID=$(cat "${config.age.secrets.${resticAwsAccessKeySecret resticId}.path}")
+                export AWS_SECRET_ACCESS_KEY
+                AWS_SECRET_ACCESS_KEY=$(cat "${config.age.secrets.${resticAwsSecretKeySecret resticId}.path}")
+                export RESTIC_REPOSITORY="${resticCfg.repository}"
+
+                mountpoint=$(zfs get -H -o value mountpoint "${dsCfg.name}")
+
+                # Restore files from restic into the mounted dataset
+                # --target is where files are restored; restic restores the full path structure
+                # So if backup was from /spool/foo/.zfs/snapshot/X, we restore to / and files go to /spool/foo/.zfs/snapshot/X
+                # Instead, we want files at mountpoint, so we use a temp dir and move
+                tmpdir=$(mktemp -d)
+                restic restore latest --target "$tmpdir"
+
+                # Find the actual data directory (it's nested under .zfs/snapshot/<name>/)
+                # Path structure: tmpdir/spool/foo/.zfs/snapshot/autosnap_... (5 levels deep)
+                snapshot_dir=$(find "$tmpdir" -mindepth 5 -maxdepth 5 -type d -path "*/.zfs/snapshot/*" | head -1)
+
+                if [ -n "$snapshot_dir" ] && [ -d "$snapshot_dir" ]; then
+                  # Move contents to mountpoint
+                  cp -a "$snapshot_dir"/. "$mountpoint"/
+                fi
+
+                rm -rf "$tmpdir"
               '';
             })
           ];
