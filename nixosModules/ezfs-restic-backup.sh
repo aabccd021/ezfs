@@ -27,6 +27,11 @@ if [ ! -d "$snapshot_path" ]; then
   exit 1
 fi
 
+# Trigger ZFS snapshot automount by listing the directory contents.
+# The [ -d ] check above uses stat() which confirms the directory exists but
+# may not trigger content materialization on some ZFS/kernel versions.
+ls "$snapshot_path" > /dev/null
+
 # Initialize repo if needed
 if ! restic snapshots >/dev/null 2>&1; then
   echo "Initializing restic repository..."
