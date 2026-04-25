@@ -843,6 +843,7 @@ in
         {
           "restic-backup-${resticId}" = {
             description = "Restic backup for ${dsCfg.name} to S3";
+            restartIfChanged = false;
             wants = [
               "agenix.service"
               "zfs-mount.service"
