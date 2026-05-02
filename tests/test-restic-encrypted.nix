@@ -1,6 +1,5 @@
 inputs:
 let
-  mock-secrets = inputs.mock-secrets-nix.lib.secrets;
   sharedModule =
     { config, ... }:
     {
@@ -37,7 +36,7 @@ in
   name = "restic-encrypted";
 
   nodes.server =
-    { pkgs, lib, ... }:
+    { pkgs, ... }:
     {
       imports = [
         inputs.agenix.nixosModules.default

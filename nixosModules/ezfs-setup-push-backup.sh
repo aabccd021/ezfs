@@ -12,7 +12,7 @@ for pushId in $pushIds; do
   zfs allow -u "$user" create,receive,mount "$pool"
 
   # if dataset already exists, we need to set the options
-  if zfs list -H "$dataset" >/dev/null 2>&1; then
+  if zfs list -H "$dataset"; then
     zfs allow -u "$user" canmount,mountpoint,keylocation "$dataset"
   fi
 done

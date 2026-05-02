@@ -82,7 +82,9 @@ let
   pullKnownHost =
     pushCfg:
     pkgs.writeText "known-host" ''
-      ${pushCfg.host} ${config.ezfs.hosts.${config.ezfs.datasets.${pushCfg.sourceDatasetId}.hostId}.publicKey}
+      ${pushCfg.host} ${
+        config.ezfs.hosts.${config.ezfs.datasets.${pushCfg.sourceDatasetId}.hostId}.publicKey
+      }
     '';
 
   pushKnownHost =
@@ -316,7 +318,9 @@ in
               };
               timerConfig = lib.mkOption {
                 type = lib.types.nullOr (lib.types.attrsOf lib.types.str);
-                default = { OnCalendar = "daily"; };
+                default = {
+                  OnCalendar = "daily";
+                };
                 description = "Systemd timer config (set to null to disable timer)";
               };
             };
@@ -667,9 +671,9 @@ in
         enableStrictShellChecks = true;
         environment.PUSH_BACKUPS = pkgs.writeText "push-backups.json" (
           builtins.toJSON (
-            lib.mapAttrs
-              (_: cfg: builtins.removeAttrs cfg [ "privateKey" ])
-              (lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups)
+            lib.mapAttrs (_: cfg: builtins.removeAttrs cfg [ "privateKey" ]) (
+              lib.filterAttrs (_: cfg: cfg.enable) config.ezfs.push-backups
+            )
           )
         );
         script = builtins.readFile ./ezfs-setup-push-backup.sh;
@@ -865,8 +869,7 @@ in
               DATASET = dsCfg.name;
               MOUNTPOINT = dsCfg.options.mountpoint or "/${dsCfg.name}";
               EXTRA_BACKUP_ARGS = lib.concatStringsSep " " (
-                resticCfg.extraBackupArgs
-                ++ (map (p: "--exclude=${p}") resticCfg.exclude)
+                resticCfg.extraBackupArgs ++ (map (p: "--exclude=${p}") resticCfg.exclude)
               );
               PRUNE_OPTS = lib.concatStringsSep " " resticCfg.pruneOpts;
             };
@@ -891,14 +894,14 @@ in
             wantedBy = [ "timers.target" ];
             timerConfig = {
               Persistent = true;
-            } // resticCfg.timerConfig;
+            }
+            // resticCfg.timerConfig;
           };
         }
       );
 
       environment = mapResticBackup (
         {
-          dsId,
           dsCfg,
           resticId,
           resticCfg,
@@ -911,7 +914,7 @@ in
               runtimeInputs = [ "/run/booted-system/sw" ];
               text = ''
                 # Recreate the ZFS dataset if destroyed
-                if ! zfs list -H "${dsCfg.name}" >/dev/null 2>&1; then
+                if ! zfs list -H "${dsCfg.name}"; then
                   zfs create -u ${
                     lib.concatStringsSep " " (lib.mapAttrsToList (n: v: "-o ${n}=${v}") dsCfg.options)
                   } ${dsCfg.name}

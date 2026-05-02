@@ -30,13 +30,10 @@ fi
 # Trigger ZFS snapshot automount by listing the directory contents.
 # The [ -d ] check above uses stat() which confirms the directory exists but
 # may not trigger content materialization on some ZFS/kernel versions.
-ls "$snapshot_path" > /dev/null
+ls "$snapshot_path"
 
-# Initialize repo if needed
-if ! restic snapshots >/dev/null 2>&1; then
-  echo "Initializing restic repository..."
-  restic init
-fi
+# Initialize repo if needed (idempotent — exits 0 if already initialized)
+restic init || true
 
 # Run backup from snapshot path
 # shellcheck disable=SC2086
