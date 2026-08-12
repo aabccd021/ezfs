@@ -110,6 +110,12 @@ let
       ) config.ezfs.restic-backups
     );
 
+  # Fixed bind-mount target for the ZFS snapshot being backed up. It has to be
+  # stable across runs so restic can match files against the parent snapshot;
+  # see the comment in ezfs-restic-backup.sh.
+  resticStablePath = resticId: "/run/ezfs-restic-${resticId}";
+  resticCacheDir = resticId: "ezfs-restic-${resticId}";
+
   resticPasswordSecret = resticId: "ezfs_restic_password_${resticId}";
   resticAwsAccessKeySecret = resticId: "ezfs_restic_aws_access_key_${resticId}";
   resticAwsSecretKeySecret = resticId: "ezfs_restic_aws_secret_key_${resticId}";
@@ -868,6 +874,12 @@ in
               RESTIC_REPOSITORY = resticCfg.repository;
               DATASET = dsCfg.name;
               MOUNTPOINT = dsCfg.options.mountpoint or "/${dsCfg.name}";
+              STABLE_PATH = resticStablePath resticId;
+              # Without this restic has neither $HOME nor $XDG_CACHE_HOME and
+              # runs cacheless, warning "running prune without a cache, this
+              # may be very slow" and re-fetching every tree blob from the
+              # remote on each run.
+              RESTIC_CACHE_DIR = "/var/cache/${resticCacheDir resticId}";
               EXTRA_BACKUP_ARGS = lib.concatStringsSep " " (
                 resticCfg.extraBackupArgs ++ (map (p: "--exclude=${p}") resticCfg.exclude)
               );
@@ -875,6 +887,7 @@ in
             };
             serviceConfig = {
               Type = "oneshot";
+              CacheDirectory = resticCacheDir resticId;
               LoadCredential = [
                 "password:${config.age.secrets.${resticPasswordSecret resticId}.path}"
                 "aws_access_key:${config.age.secrets.${resticAwsAccessKeySecret resticId}.path}"
@@ -957,9 +970,16 @@ in
                 tmpdir=$(mktemp -d)
                 restic restore latest --target "$tmpdir"
 
-                # Find the actual data directory (it's nested under .zfs/snapshot/<name>/)
-                # Path structure: tmpdir/spool/foo/.zfs/snapshot/autosnap_... (5 levels deep)
-                snapshot_dir=$(find "$tmpdir" -mindepth 5 -maxdepth 5 -type d -path "*/.zfs/snapshot/*" | head -1)
+                # Backups now run from a fixed bind-mount path, so the restored
+                # tree is just tmpdir + that path.
+                snapshot_dir="$tmpdir${resticStablePath resticId}"
+
+                # Snapshots taken before that change recorded the ZFS snapshot
+                # directory instead, nested under .zfs/snapshot/<name>/ five
+                # levels deep, e.g. tmpdir/spool/foo/.zfs/snapshot/autosnap_...
+                if [ ! -d "$snapshot_dir" ]; then
+                  snapshot_dir=$(find "$tmpdir" -mindepth 5 -maxdepth 5 -type d -path "*/.zfs/snapshot/*" | head -1)
+                fi
 
                 if [ -n "$snapshot_dir" ] && [ -d "$snapshot_dir" ]; then
                   # Move contents to mountpoint

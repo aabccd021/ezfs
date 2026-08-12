@@ -32,12 +32,32 @@ fi
 # may not trigger content materialization on some ZFS/kernel versions.
 ls "$snapshot_path"
 
+# restic decides whether a file changed by looking it up at the same path in
+# the parent snapshot. $snapshot_path ends in the sanoid snapshot name, which
+# is different on every run, so no file ever matched and each run re-read the
+# whole dataset from disk — 300 GiB of reads to upload a few MiB. The same
+# moving path also put every snapshot in its own forget/prune group, so
+# retention policies silently kept everything.
+#
+# Bind-mounting onto a fixed path makes the tree restic sees identical between
+# runs, which restores both parent matching and retention grouping.
+mkdir -p "$STABLE_PATH"
+
+# A run killed mid-flight leaves the bind mount behind; stacking another on top
+# would hide it and leak mounts until reboot.
+if findmnt --mountpoint "$STABLE_PATH" >/dev/null; then
+  umount "$STABLE_PATH"
+fi
+
+mount --bind "$snapshot_path" "$STABLE_PATH"
+trap 'umount "$STABLE_PATH"' EXIT
+
 # Initialize repo if needed (idempotent — exits 0 if already initialized)
 restic init || true
 
-# Run backup from snapshot path
+# Run backup from the stable path
 # shellcheck disable=SC2086
-restic backup "$snapshot_path" $EXTRA_BACKUP_ARGS
+restic backup "$STABLE_PATH" $EXTRA_BACKUP_ARGS
 
 # Prune if configured
 if [ -n "$PRUNE_OPTS" ]; then
