@@ -8,6 +8,121 @@ let
 
   dsToPool = ds: lib.elemAt (lib.splitString "/" ds) 0;
 
+  # Every snapshot type sanoid knows, in sanoid.defaults.conf order.
+  snapshotTypes = [
+    "frequently"
+    "hourly"
+    "daily"
+    "weekly"
+    "monthly"
+    "yearly"
+  ];
+
+  # The non-zero half of sanoid's own [template_default]. Reproduced here so
+  # that every type this module emits is stated outright, which is the whole
+  # point of the `snapshots` option -- see its description. Kept as the
+  # default so this module's behaviour is unchanged for anyone who does not
+  # set `snapshots`; the types sanoid defaults to 0 are filled in by
+  # expandSnapshots below.
+  sanoidDefaultCounts = {
+    hourly = 48;
+    daily = 90;
+    monthly = 6;
+  };
+
+  # A `snapshots` value as a full set of sanoid keep counts: the counts asked
+  # for, and an explicit 0 for every type that was not.
+  #
+  # Zeroing the rest is load-bearing rather than tidy. An unstated type is not
+  # absent: it inherits template_default above, which is non-zero for hourly,
+  # daily and monthly (sanoid's own defaults already hold frequently, weekly
+  # and yearly at 0). Sanoid destroys a snapshot only when it is both older
+  # than count * period *and* one of more than `count` snapshots of its type,
+  # so under an inherited `daily = 90` a handful of stray daily snapshots
+  # never exceeds the count and lives forever. An explicit 0 is the opposite
+  # instruction: sanoid takes none and prunes any it finds.
+  expandSnapshots =
+    snapshots:
+    let
+      counts = if snapshots == "none" then { } else snapshots;
+    in
+    lib.mapAttrs (_: count: lib.mkDefault count) (lib.genAttrs snapshotTypes (_: 0) // counts);
+
+  # Whether a `snapshots` value leaves sanoid taking any snapshot at all.
+  # Sanoid only snapshots a type whose keep count is above 0, so "none", the
+  # empty attribute set and an attribute set of all-zero counts all mean the
+  # same thing here even though only the first turns autosnap off.
+  takesSnapshots =
+    snapshots: snapshots != "none" && lib.any (count: count > 0) (lib.attrValues snapshots);
+
+  # Keep counts keyed by snapshot type. The key check is not cosmetic: an
+  # unknown key reaches sanoid.conf verbatim and sanoid refuses to start at
+  # all ("FATAL ERROR: I don't understand the setting ..."), taking every
+  # other dataset's snapshotting and pruning down with it. A typo would also
+  # leave the type it was meant to be at 0, silently pruning that type. Both
+  # are caught here instead.
+  snapshotCountsType =
+    lib.types.addCheck (lib.types.attrsOf lib.types.ints.unsigned) (
+      counts: lib.all (type: lib.elem type snapshotTypes) (lib.attrNames counts)
+    )
+    // {
+      description = "sanoid keep counts keyed by ${lib.concatStringsSep ", " snapshotTypes}";
+    };
+
+  snapshotsOption =
+    { default, description }:
+    lib.mkOption {
+      type = lib.types.either (lib.types.enum [ "none" ]) snapshotCountsType;
+      inherit default;
+      example = {
+        daily = 7;
+        weekly = 4;
+        monthly = 12;
+      };
+      description = ''
+        ${description}
+
+        Either an attribute set of sanoid keep counts per snapshot type
+        (${lib.concatStringsSep ", " snapshotTypes}), or the string "none".
+
+        Types left out are held at 0 rather than inheriting sanoid's own
+        defaults of hourly 48, daily 90, monthly 6. That distinction is the
+        reason this option exists: sanoid prunes a type only once more than
+        its count exist, so a type nothing fills can never prune, and a
+        single snapshot landing in such a type is kept forever with nothing
+        to indicate it. Stating every type closes that.
+
+        "none" means take nothing and keep nothing: autosnap off and every
+        count 0, so a snapshot made here by hand is cleaned up rather than
+        immortal. Setting `services.sanoid.datasets.<name>.autosnap = false`
+        by hand is not the same thing and is the mistake this replaces -- it
+        stops sanoid taking snapshots while leaving those inherited counts in
+        place.
+
+        On a replication target autosnap is already off, so there "none"
+        only means every count 0 -- sanoid destroys each snapshot as soon as
+        syncoid lands it, which throws the backup away and makes the next run
+        resend from scratch. It is almost never what you want on a target.
+      '';
+    };
+
+  # Retention for snapshots that arrive on a replication target. syncoid runs
+  # with --no-sync-snap, so every snapshot on a target was named by whatever
+  # created it on the source, and sanoid on that side only prunes them.
+  #
+  # The default reproduces what this module did before the option existed,
+  # which is worth reading twice before relying on it: weekly and yearly are
+  # 0, so a source that takes weekly snapshots has them replicated to the
+  # target and then destroyed on sanoid's next run. If the source keeps types
+  # beyond hourly, daily and monthly, set this to match it.
+  #
+  # Shared verbatim by pull-backups and push-backups: both are the same
+  # receiving side of the same replication.
+  targetSnapshotsOption = snapshotsOption {
+    default = sanoidDefaultCounts;
+    description = "How many of each snapshot type sanoid keeps on this replication target.";
+  };
+
   mapDataset =
     fn:
     lib.mkMerge (
@@ -179,6 +294,10 @@ in
               type = lib.types.listOf lib.types.str;
               default = [ ];
             };
+            snapshots = snapshotsOption {
+              default = sanoidDefaultCounts;
+              description = "Sanoid's automatic snapshots of this dataset, and how many of each are kept.";
+            };
           };
         }
       );
@@ -222,6 +341,7 @@ in
               privateKey = lib.mkOption {
                 type = lib.types.path;
               };
+              snapshots = targetSnapshotsOption;
             };
           }
         )
@@ -269,6 +389,7 @@ in
               privateKey = lib.mkOption {
                 type = lib.types.path;
               };
+              snapshots = targetSnapshotsOption;
             };
           }
         )
@@ -469,10 +590,14 @@ in
         }:
         {
           sanoid.enable = true;
+          # autosnap stays off whatever `snapshots` says: this dataset is
+          # written by syncoid, and sanoid's only job here is to expire what
+          # arrives. The counts are what `snapshots` decides.
           sanoid.datasets.${pullCfg.targetDatasetName} = {
             autosnap = lib.mkDefault false;
             autoprune = lib.mkDefault true;
-          };
+          }
+          // expandSnapshots pullCfg.snapshots;
           syncoid.enable = true;
           syncoid.commands."pull-backup-${pullId}" = {
             sshKey = "%d/${pullSshKey pullId}";
@@ -543,9 +668,14 @@ in
         {
           sanoid.enable = true;
           sanoid.datasets.${dsCfg.name} = {
-            autosnap = lib.mkDefault true;
+            # "none" is the one value that has to reach autosnap as well as
+            # the counts: taking no snapshots and keeping none are the two
+            # halves of the same instruction, and splitting them is exactly
+            # the half-state this option exists to make unwritable.
+            autosnap = lib.mkDefault (dsCfg.snapshots != "none");
             autoprune = lib.mkDefault true;
-          };
+          }
+          // expandSnapshots dsCfg.snapshots;
         }
       );
 
@@ -710,10 +840,15 @@ in
         { pushCfg, ... }:
         {
           sanoid.enable = true;
+          # autosnap stays off whatever `snapshots` says: this dataset is
+          # written by syncoid from the far side, and sanoid's only job here
+          # is to expire what arrives. The counts are what `snapshots`
+          # decides.
           sanoid.datasets.${pushCfg.targetDatasetName} = {
             autosnap = lib.mkDefault false;
             autoprune = lib.mkDefault true;
-          };
+          }
+          // expandSnapshots pushCfg.snapshots;
           openssh = {
             enable = true;
             allowSFTP = lib.mkDefault false;
@@ -834,6 +969,73 @@ in
       );
     }
     {
+      # syncoid runs with --no-sync-snap, so replication only ever sends
+      # snapshots sanoid already took on the source. `snapshots = "none"` --
+      # and equally an attribute set that leaves every keep count at 0 --
+      # means none is ever taken, so the syncoid unit has nothing to send and
+      # fails on every run. That is the same silent pairing the restic
+      # assertion below catches, one path over.
+      #
+      # The guard mirrors mapPullSource/mapPushSource exactly, which is to say
+      # it deliberately does *not* look at the backup's own `enable`. By this
+      # module's convention `enable` is set on the host that owns the target
+      # dataset, never on the source: the source-side plumbing -- including
+      # the push-backup's own syncoid unit, built by mapPushSource -- is
+      # generated whenever the source dataset is enabled and local. Adding
+      # `enable` here would make this assertion unreachable, since no host
+      # satisfies both `enable` and `hostId == dsCfg.hostId`.
+      assertions =
+        let
+          sourceAssertion =
+            kind: backupId: backupCfg:
+            let
+              dsCfg = config.ezfs.datasets.${backupCfg.sourceDatasetId};
+            in
+            {
+              assertion =
+                !(config.ezfs.enable && dsCfg.enable && config.networking.hostId == dsCfg.hostId)
+                || takesSnapshots dsCfg.snapshots;
+              message = ''
+                ezfs.${kind}.${backupId} replicates dataset ${backupCfg.sourceDatasetId} with
+                syncoid --no-sync-snap, which only sends snapshots that already exist, but that
+                dataset keeps no snapshots (snapshots = "none", or every keep count 0), so sanoid
+                never takes one and there is nothing to replicate.
+              '';
+            };
+        in
+        lib.mapAttrsToList (sourceAssertion "pull-backups") config.ezfs.pull-backups
+        ++ lib.mapAttrsToList (sourceAssertion "push-backups") config.ezfs.push-backups;
+    }
+    {
+      # ezfs-restic-backup.sh backs up the newest `autosnap` snapshot of the
+      # source dataset and exits 1 when there is none. Sanoid only snapshots a
+      # type whose keep count is above 0, so `snapshots = "none"` -- and
+      # equally an attribute set that leaves every count at 0 -- means no
+      # autosnap snapshot ever exists. The pairing is a config error that
+      # would otherwise only show up as a failing timer.
+      #
+      # The guard mirrors mapResticBackup's exactly, so the assertion fires on
+      # precisely the hosts that get a backup unit: not on a host that merely
+      # sees the same shared `ezfs` config but runs the dataset elsewhere, and
+      # not when the backup itself is disabled.
+      assertions = lib.mapAttrsToList (
+        resticId: resticCfg:
+        let
+          dsCfg = config.ezfs.datasets.${resticCfg.sourceDatasetId};
+        in
+        {
+          assertion =
+            !(config.ezfs.enable && resticCfg.enable && config.networking.hostId == dsCfg.hostId)
+            || takesSnapshots dsCfg.snapshots;
+          message = ''
+            ezfs.restic-backups.${resticId} backs up the newest sanoid autosnap snapshot of
+            dataset ${resticCfg.sourceDatasetId}, but that dataset keeps no snapshots
+            (snapshots = "none", or every keep count 0), so no autosnap snapshot is ever
+            taken and the backup fails on every run.
+          '';
+        }
+      ) config.ezfs.restic-backups;
+
       age = mapResticBackup (
         { resticId, resticCfg, ... }:
         {
