@@ -27,6 +27,21 @@
         ];
       };
 
+      # Snapshots named the way sanoid names its own, for datasets that cannot
+      # use its autosnap because something has to happen around the snapshot.
+      # See the header of the script for the naming contract it relies on.
+      #
+      # /run/booted-system/sw rather than pkgs.zfs, matching the scripts in
+      # nixosModules: the zfs userland belonging to the running kernel rather
+      # than a store-pinned one that can disagree with the loaded module after
+      # an update. That makes this a NixOS-only package, which is what every
+      # other script here already is.
+      sanoid-snapshot = pkgs.writeShellApplication {
+        name = "sanoid-snapshot";
+        runtimeInputs = [ "/run/booted-system/sw" ];
+        text = builtins.readFile ./nixosModules/sanoid-snapshot.sh;
+      };
+
       tests = import ./tests {
         pkgs = pkgs;
         inputs = {
@@ -44,6 +59,8 @@
       checks.x86_64-linux = tests // {
         formatting = treefmtEval.config.build.check self;
       };
+
+      packages.x86_64-linux.sanoid-snapshot = sanoid-snapshot;
 
       packages.x86_64-linux.test-all = pkgs.linkFarm "ezfs-tests" (
         builtins.map (name: {
